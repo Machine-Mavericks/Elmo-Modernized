@@ -35,7 +35,7 @@ public class Drivetrain extends SubsystemBase {
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
     public class SwerveModuleSettings {
         /** Gear ratio between drive motor and wheel */
-        public final doublePROBLEM DriveMotorGearRatio; // TODO: This is not the ratio the swerve constructor wants
+        public final double DriveMotorGearRatio; 
         /** Gear ratio between steer motor and CANcoder An example ratio for the SDS Mk4: 12.8 */
         public final double SteerMotorGearRatio;
         /** Wheel radius of the driving wheel in inches */
@@ -176,7 +176,7 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
-        SWERVE_SETTINGS = new SwerveModuleSettings(MK4_L1_DriveReduction, MK4_L1_SteerReduction, MK4_L1_WheelDiameter, false);
+        SWERVE_SETTINGS = new SwerveModuleSettings(1 / MK4_L1_DriveReduction, 1 / MK4_L1_SteerReduction, MK4_L1_WheelDiameter, true);
         // SmartDashboard.putData("Field", m_field);
 
         tab = Shuffleboard.getTab("Drivetrain");
