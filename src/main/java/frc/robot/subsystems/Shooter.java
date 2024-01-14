@@ -6,10 +6,11 @@ package frc.robot.subsystems;
 
 import java.util.ArrayList;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.InvertType;
-import com.ctre.phoenix.motorcontrol.TalonFXInvertType;
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.GenericEntry;
@@ -68,34 +69,52 @@ public class Shooter extends SubsystemBase {
   //Logs odometry and shot successfullness, but does nothing with it, implement logging to file later.
   public ArrayList<ArrayList<String>> ShotList = new ArrayList<ArrayList<String>>();
 
+  final VelocityVoltage m_velocityControl = new VelocityVoltage(0); 
+
   /** Creates a new Shooter. */
   public Shooter() {
-    rightShooterFalcon.setInverted(TalonFXInvertType.Clockwise);
-    leftShooterFalcon.follow(rightShooterFalcon);
-    leftShooterFalcon.setInverted(InvertType.OpposeMaster);
+    rightShooterFalcon.setInverted(true);
+    leftShooterFalcon.setControl(new Follower(rightShooterFalcon.getDeviceID(), true));
 
-    rightShooterFalcon.configVoltageCompSaturation(11.0, 0);
-    leftShooterFalcon.configVoltageCompSaturation(11.0, 0);
+    TalonFXConfiguration rightConfig = new TalonFXConfiguration();
+    TalonFXConfiguration topConfig = new TalonFXConfiguration();
+
+    rightConfig.Slot0.kV = 0.11459;
+    rightConfig.Slot0.kP = 0.6726;
+    rightConfig.Slot0.kI = 0.12011;
+    rightConfig.Slot0.kD = 0.0;
+
+
+    topConfig.Slot0.kV = 0.1081;
+    topConfig.Slot0.kP = 0.4324;
+    topConfig.Slot0.kI = 2.4023;
+    topConfig.Slot0.kD = 0.0;
+    
+
+    rightShooterFalcon.getConfigurator().apply(rightConfig);
+    topShooterFalcon.getConfigurator().apply(topConfig);
+    // rightShooterFalcon.configVoltageCompSaturation(11.0, 0);
+    // leftShooterFalcon.configVoltageCompSaturation(11.0, 0);
 
     // old PIF gains archived at bottom of file
-    rightShooterFalcon.config_kF(0, 0.0477, 0); // 0.047698 (works ok)
-    rightShooterFalcon.config_kP(0, 0.28, 0); // 0.35 // 0.6 //0.75 (works ok) // was 0.38
-    rightShooterFalcon.config_kI(0, 0.00005, 0); // kI=0.001
-    rightShooterFalcon.config_kD(0, 0.0, 0);   // was 0.05
-    rightShooterFalcon.configMaxIntegralAccumulator(0, 60000.0, 0);
+    // rightShooterFalcon.config_kF(0, 0.0477, 0); // 0.047698 (works ok)
+    // rightShooterFalcon.config_kP(0, 0.28, 0); // 0.35 // 0.6 //0.75 (works ok) // was 0.38
+    // rightShooterFalcon.config_kI(0, 0.00005, 0); // kI=0.001
+    // rightShooterFalcon.config_kD(0, 0.0, 0);   // was 0.05
+    //rightShooterFalcon.configMaxIntegralAccumulator(0, 60000.0, 0);
 
-    rightShooterFalcon.configPeakOutputForward(1, 0);
-    rightShooterFalcon.configPeakOutputReverse(0.0, 0);
+    // rightShooterFalcon.configPeakOutputForward(1, 0);
+    // rightShooterFalcon.configPeakOutputReverse(0.0, 0);
     
     // setup top flywheel PIDF gains
-    topShooterFalcon.config_kF(0, 0.045, 0);
-    topShooterFalcon.config_kP(0, 0.18, 0); 
-    topShooterFalcon.config_kI(0, 0.001, 0); 
-    topShooterFalcon.config_kD(0, 0.0, 0);   
-    topShooterFalcon.configMaxIntegralAccumulator(0, 40000.0, 0);
+    // topShooterFalcon.config_kF(0, 0.045, 0);
+    // topShooterFalcon.config_kP(0, 0.18, 0); 
+    // topShooterFalcon.config_kI(0, 0.001, 0); 
+    // topShooterFalcon.config_kD(0, 0.0, 0);   
+    //topShooterFalcon.configMaxIntegralAccumulator(0, 40000.0, 0);
     
-    topShooterFalcon.configPeakOutputForward(1.0, 0);
-    topShooterFalcon.configPeakOutputReverse(-1.0, 0);
+    // topShooterFalcon.configPeakOutputForward(1.0, 0);
+    // topShooterFalcon.configPeakOutputReverse(-1.0, 0);
     
     // initialize the shuffleboard
     initializeShuffleboard();
@@ -126,12 +145,15 @@ public class Shooter extends SubsystemBase {
   /** This method will set the motors to the given motor speed
    * @param shooterSpeed the desired motor speed in rpm */
   public void setShooterSpeed(double shooterSpeed) {
-    rightShooterFalcon.set(ControlMode.Velocity, shooterSpeed * (2048 / 600.0));
+    //rightShooterFalcon.set(ControlMode.Velocity, shooterSpeed * (2048 / 600.0));
+
+    // New API expects rotations per second (at least it's not ticks)
+    rightShooterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(shooterSpeed / 60));
   }
 
   /** This method will return motor speed (rpm)*/
   public double getShooterSpeed() {
-    return rightShooterFalcon.getSelectedSensorVelocity() / (2048 / 600.0);
+    return rightShooterFalcon.getVelocity().getValue() * 60;
   }
 
   public double getShooterTargetSpeed() {
@@ -141,12 +163,12 @@ public class Shooter extends SubsystemBase {
   /** This method will set the motors to the given motor speed
    * @param shooterSpeed the desired motor speed in rpm */
   public void setTopShooterSpeed(double shooterSpeed) {
-    topShooterFalcon.set(ControlMode.Velocity, -shooterSpeed * (2048 / 600.0));
+    topShooterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(-shooterSpeed / 60));
   }
 
   /** This method will return motor speed (rpm)*/
   public double getTopShooterSpeed() {
-    return -topShooterFalcon.getSelectedSensorVelocity() / (2048 / 600.0);
+    return -topShooterFalcon.getVelocity().getValue() * 60;
   }
 
   public double getTopShooterTargetSpeed()
@@ -232,15 +254,15 @@ public class Shooter extends SubsystemBase {
   public void updateShuffleboard() {
 
     // update shooter parameters
-    motorSpeed.setDouble(rightShooterFalcon.getSelectedSensorVelocity() * ((10.0 / 2048.0) * 60));
-    motorVoltage.setDouble(rightShooterFalcon.getMotorOutputVoltage());
-    leftMotorCurrent.setDouble(leftShooterFalcon.getSupplyCurrent());
-    rightMotorCurrent.setDouble(rightShooterFalcon.getSupplyCurrent());
-    targetSpeed.setDouble(rightShooterFalcon.getClosedLoopTarget() * ((10.0 / 2048.0) * 60));
+    motorSpeed.setDouble(rightShooterFalcon.getVelocity().getValue() * 60);
+    motorVoltage.setDouble(rightShooterFalcon.getMotorVoltage().getValue());
+    leftMotorCurrent.setDouble(leftShooterFalcon.getSupplyCurrent().getValue());
+    rightMotorCurrent.setDouble(rightShooterFalcon.getSupplyCurrent().getValue());
+    targetSpeed.setDouble(rightShooterFalcon.getClosedLoopTarget() * 60);
     
     // update top shooter parameters
-    topShooterSpeed.setDouble(topShooterFalcon.getSelectedSensorVelocity() * ((10.0 / 2048.0) * 60));
-    topShootertargetSpeed.setDouble(topShooterFalcon.getClosedLoopTarget() * ((10.0 / 2048.0) * 60));
+    topShooterSpeed.setDouble(topShooterFalcon.getVelocity().getValue() * 60);
+    topShootertargetSpeed.setDouble(topShooterFalcon.getClosedLoopTarget() * 60);
     
     // update hood parameters
     hoodTargetPos.setDouble(m_HoodTargetPos);
