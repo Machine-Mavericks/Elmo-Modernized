@@ -2,12 +2,11 @@ package frc.robot.subsystems;
 
 import java.util.Map;
 
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.SteerRequestType;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -25,8 +24,6 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.RobotMap;
-
-import com.ctre.phoenix6.configs.Slot0Configs;
 
 
 /**
@@ -52,7 +49,7 @@ public class Drivetrain extends SubsystemBase {
         /** The steer motor gains */
         public static final Slot0Configs SteerMotorGains = new Slot0Configss(); // Intentionally misspelled to leave an error here. Remember to configure these before doing anything.
         /** The drive motor gains */
-        public static final Slot0Configs DriveMotorGains = new Slot0Configs().wi;
+        public static final Slot0Configs DriveMotorGains = new Slot0Configs();
 
         /** Only option is Voltage without pro liscence */
         public static final ClosedLoopOutputType DriveClosedLoopOutput = ClosedLoopOutputType.Voltage; 

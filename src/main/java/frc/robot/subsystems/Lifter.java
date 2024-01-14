@@ -6,7 +6,11 @@ package frc.robot.subsystems;
 
 import javax.swing.text.StyledEditorKit.BoldAction;
 
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -35,21 +39,33 @@ public class Lifter extends SubsystemBase {
   private boolean hasBall = false;
   public boolean shooting = false;
 
+  private VelocityDutyCycle m_velocityControl = new VelocityDutyCycle(0);
+
   /** Creates a new Lifter. */
   public Lifter() {
+    lifterFalcon.setNeutralMode(NeutralModeValue.Brake);
 
-    lifterFalcon.setNeutralMode(NeutralMode.Brake);
 
-    lifterFalcon.config_kF(0, 0.044, 0);
-    lifterFalcon.config_kD(0, 0.0, 0);
-    lifterFalcon.config_kP(0, 0.06, 0);
-    lifterFalcon.config_kI(0, 0.00010, 0); 
+    TalonFXConfiguration lifterConfiguration = new TalonFXConfiguration();
+    lifterConfiguration.Slot0.kV = 0.0088;
+    lifterConfiguration.Slot0.kD = 0.0;
+    lifterConfiguration.Slot0.kP = 0.0120;
+    lifterConfiguration.Slot0.kI = 0.0200;
+    
+    lifterFalcon.getConfigurator().apply(lifterConfiguration);
+
+    // lifterFalcon.config_kF(0, 0.044, 0);
+    // lifterFalcon.config_kD(0, 0.0, 0);
+    // lifterFalcon.config_kP(0, 0.06, 0);
+    // lifterFalcon.config_kI(0, 0.00010, 0); 
     // lifterFalcon.config_kD(0, 0.05, 0);
     // lifterFalcon.configMaxIntegralAccumulator(0, 120000.0, 0);
 
     // rightShooterFalcon.set(ControlMode.PercentOutput, 0);
-    lifterFalcon.configPeakOutputForward(1, 0);
-    lifterFalcon.configPeakOutputReverse(-1.0, 0);
+
+    // TODO: We probably don't need these right?
+    // lifterFalcon.configPeakOutputForward(1, 0);
+    // lifterFalcon.configPeakOutputReverse(-1.0, 0);
 
     initializeShuffleboard();
   }
@@ -57,7 +73,7 @@ public class Lifter extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    if (hasBall && liftLimit.get() && OI.shootButton.get()){
+    if (hasBall && liftLimit.get() && OI.shootButton.getAsBoolean()){
       hasBall = false;
       shotsTaken++;
     }
@@ -70,21 +86,20 @@ public class Lifter extends SubsystemBase {
   }
 
   public void liftBalls(){
-    lifterFalcon.set(ControlMode.Velocity, RobotMap.BALL_LIFTER_SPEED* (2048 / 600.0)); 
+    lifterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(RobotMap.BALL_LIFTER_SPEED / 60)); 
   }
 
   public void liftBalls(double Speed){
-    lifterFalcon.set(ControlMode.Velocity, Speed* (2048 / 600.0)); 
+    lifterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(Speed / 60)); 
   }
 
-  public void releaseBalls(){
-    lifterFalcon.set(ControlMode.Velocity, -RobotMap.BALL_LIFTER_SPEED* (2048 / 600.0)); 
+  public void releaseBalls(){ // BALL_LIFTER_SPEED is in RPM
+    lifterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(-RobotMap.BALL_LIFTER_SPEED / 60)); 
+    // -RobotMap.BALL_LIFTER_SPEED* (2048 / 600.0)
   }
 
   public void stopMotor() {
-    lifterFalcon.set(ControlMode.PercentOutput, 0.0);
-    // lifterFalcon.NeutralMode.Brake=(2);
-
+    lifterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(0));
   }
 
   public void initializeShuffleboard() {
@@ -99,6 +114,6 @@ public class Lifter extends SubsystemBase {
   public void updateShuffleboard() {
 
     limitSwitch.setBoolean(liftLimit.get());
-    lifterSpeed.setDouble(lifterFalcon.getSelectedSensorVelocity() / (2048 / 600.0));
+    lifterSpeed.setDouble(lifterFalcon.getVelocity().getValue() * 60);
   }
 }
