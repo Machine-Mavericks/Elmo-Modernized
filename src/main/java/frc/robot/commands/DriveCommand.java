@@ -46,7 +46,7 @@ public class DriveCommand extends Command {
 
     // If no rotational input provided, use PID to hold heading
     // When the zero button is pressed force reset to prevent jumping
-    if(rotInput == 0 && !OI.zeroButton.get()){
+    if(rotInput == 0 && !OI.zeroButton.getAsBoolean()){
       if(m_pidDelay > 0) m_pidDelay --;
       else {
         // If the target is unset, set it to current heading
