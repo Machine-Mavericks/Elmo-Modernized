@@ -2,10 +2,6 @@ package frc.robot.subsystems;
 
 import java.util.Map;
 
-// import com.swervedrivespecialties.swervelib.Mk4SwerveModuleHelper;
-// import com.swervedrivespecialties.swervelib.SdsModuleConfigurations;
-
-//import com.swervedrivespecialties.swervelib.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
@@ -17,9 +13,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -30,12 +24,6 @@ import frc.robot.RobotContainer;
 import frc.robot.RobotMap;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.hardware.TalonFX;
-// What is this
-// import com.ctre.phoenix.motorcontrol.NeutralMode;
-
-
-
 
 
 /**
@@ -45,28 +33,37 @@ public class Drivetrain extends SubsystemBase {
 
     // Useful:
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
-    // TODO: FINISH
     public class SwerveModuleSettings {
         /** Gear ratio between drive motor and wheel */
-        public static final double DriveMotorGearRatio;
+        public final doublePROBLEM DriveMotorGearRatio; // TODO: This is not the ratio the swerve constructor wants
         /** Gear ratio between steer motor and CANcoder An example ratio for the SDS Mk4: 12.8 */
-        public static final double SteerMotorGearRatio;
+        public final double SteerMotorGearRatio;
         /** Wheel radius of the driving wheel in inches */
-        public static final double WheelRadius;
+        public final double wheelDiameter;
         /** The maximum amount of current the drive motors can apply without slippage */
-        public static final double SlipCurrent = 400;
+        public final double SlipCurrent = 400;
 
         /** The steer motor gains */
-        public static final Slot0Configs SteerMotorGains;
+        public final Slot0Configs SteerMotorGains = 2;
         /** The drive motor gains */
-        public static final Slot0Configs DriveMotorGains;
+        public final Slot0Configs DriveMotorGains = 2;
 
         /** True if the steering motor is reversed from the CANcoder */
-        public static final boolean SteerMotorReversed;
+        public final boolean SteerMotorInverted;
+
+        public SwerveModuleSettings(double driveMotorGearRatio, double steerMotorGearRatio, double wheelDiameter, boolean steerMotorInverted){
+            this.DriveMotorGearRatio = driveMotorGearRatio;
+            this.SteerMotorGearRatio = steerMotorGearRatio;
+            this.wheelDiameter = wheelDiameter;
+
+            this.SteerMotorInverted = steerMotorInverted;
+        }
     }
 
+    
+
             
-    // value controlled on shuffleboard to stop the jerkiness of the robot by limiting its accelera``tion
+    // value controlled on shuffleboard to stop the jerkiness of the robot by limiting its acceleration
     public GenericEntry maxAccel;
     public GenericEntry speedLimitFactor;
 
@@ -95,18 +92,27 @@ public class Drivetrain extends SubsystemBase {
 
 
 
-     // Front left
-     public static final Translation2d FRONT_LEFT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
-     // Front right
-     public static final Translation2d FRONT_RIGHT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
-     // Back left
-     public static final Translation2d BACK_LEFT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
-     // Back right
-     public static final Translation2d BACK_RIGHT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
+    // Front left
+    public static final Translation2d FRONT_LEFT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
+    // Front right
+    public static final Translation2d FRONT_RIGHT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
+    // Back left
+    public static final Translation2d BACK_LEFT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
+    // Back right
+    public static final Translation2d BACK_RIGHT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
 
 
+    // All gearing values used to be supplied by the SDS library, which was discontinued
+    // Values taken from https://github.com/SwerveDriveSpecialties/Do-not-use-swerve-lib-2022-unmaintained/blob/develop/src/main/java/com/swervedrivespecialties/swervelib/SdsModuleConfigurations.java
+    public static final double MK4_L1_DriveReduction = (14.0 / 50.0) * (25.0 / 19.0) * (15.0 / 45.0);
+    public static final double MK4_L1_SteerReduction = (15.0 / 32.0) * (10.0 / 60.0);
+    public static final double MK4_L1_WheelDiameter = 0.10033;
 
+    public static final boolean MK4_L1_DriveInverted = true;
+    public static final boolean MK4_L1_SteerInverted = true;
 
+    public static SwerveModuleSettings SWERVE_SETTINGS;
+     
 
     // The formula for calculating the theoretical maximum velocity is:
     // <Motor free speed RPM> / 60 * <Drive reduction> * <Wheel diameter meters> *
@@ -122,9 +128,10 @@ public class Drivetrain extends SubsystemBase {
      * This is a measure of how fast the robot should be able to drive in a straight
      * line.
      */
-    public static final double MAX_VELOCITY_METERS_PER_SECOND = 6380.0 / 60.0 *
-            SdsModuleConfigurations.MK4_L1.getDriveReduction() *
-            SdsModuleConfigurations.MK4_L1.getWheelDiameter() * Math.PI;
+    public static final double MAX_VELOCITY_METERS_PER_SECOND = 6380.0 / 60.0 *      
+            MK4_L1_DriveReduction *
+            MK4_L1_WheelDiameter * Math.PI;
+
     /**
      * The maximum angular velocity of the robot in radians per second.
      * <p>
@@ -147,7 +154,7 @@ public class Drivetrain extends SubsystemBase {
             
 
     // These are our modules. We set them in the constructor.
-    private com.ctre.phoenix6.mechanisms.swerve.SwerveModule m_frontLeftModule;
+    private SwerveModule m_frontLeftModule;
     private SwerveModule m_frontRightModule;
     private SwerveModule m_backLeftModule;
     private SwerveModule m_backRightModule;
@@ -169,7 +176,7 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
-
+        SWERVE_SETTINGS = new SwerveModuleSettings(MK4_L1_DriveReduction, MK4_L1_SteerReduction, MK4_L1_WheelDiameter, false);
         // SmartDashboard.putData("Field", m_field);
 
         tab = Shuffleboard.getTab("Drivetrain");
@@ -193,19 +200,11 @@ public class Drivetrain extends SubsystemBase {
 
     }
 
+    // Note: WPI's coordinate system is X forward, Y to the left so make sure all locations are with
     private void resetModules(NeutralModeValue nm) {
-
-
-        
         //final Mk4SwerveModuleHelper.GearRatio DRIVE_RATIO = Mk4SwerveModuleHelper.GearRatio.L1;
 
-        // TalonFX temp1 = new TalonFX(RobotMap.CANID.FL_DRIVE_FALCON);
-        // TalonFX temp2 = new TalonFX(RobotMap.CANID.FR_DRIVE_FALCON);
-        // TalonFX temp3 = new TalonFX(RobotMap.CANID.BL_DRIVE_FALCON);
-        // TalonFX temp4 = new TalonFX(RobotMap.CANID.BR_DRIVE_FALCON);
-
-
-        // Note: WPI's coordinate system is X forward, Y to the left so make sure all locations are with
+        // Init Front Left Module
         SwerveModuleConstants frontLeftConstants = CreateSwerveModuleConstants(
                 RobotMap.CANID.FL_STEER_FALCON, 
                 RobotMap.CANID.FL_DRIVE_FALCON, 
@@ -217,15 +216,42 @@ public class Drivetrain extends SubsystemBase {
         m_frontLeftModule = new SwerveModule(frontLeftConstants, CAN_BUS_NAME);
         m_frontLeftModule.configNeutralMode(nm);
 
-        SwerveModuleConstants frontRightConstants = CreateSwerveModuleConstants();
+
+        // Init Front Right Module
+        SwerveModuleConstants frontRightConstants = CreateSwerveModuleConstants(
+                RobotMap.CANID.FR_STEER_FALCON, 
+                RobotMap.CANID.FR_DRIVE_FALCON, 
+                RobotMap.CANID.FR_STEER_ENCODER, 
+                -Math.toRadians(94 + 180), 
+                FRONT_RIGHT_OFFSET.getX(),
+                FRONT_RIGHT_OFFSET.getY()
+        );
         m_frontRightModule = new SwerveModule(frontRightConstants, CAN_BUS_NAME);
         m_frontRightModule.configNeutralMode(nm);
 
-        SwerveModuleConstants backLeftConstants = CreateSwerveModuleConstants();
+
+        // Init Back Left Module
+        SwerveModuleConstants backLeftConstants = CreateSwerveModuleConstants(
+                RobotMap.CANID.BL_STEER_FALCON, 
+                RobotMap.CANID.BL_DRIVE_FALCON, 
+                RobotMap.CANID.BL_STEER_ENCODER, 
+                -Math.toRadians(200 + 180), 
+                BACK_LEFT_OFFSET.getX(),
+                BACK_LEFT_OFFSET.getY()
+        );
         m_backLeftModule = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
         m_backLeftModule.configNeutralMode(nm);
 
-        SwerveModuleConstants backRightConstants = CreateSwerveModuleConstants();
+
+        // Init Back Right Module
+        SwerveModuleConstants backRightConstants = CreateSwerveModuleConstants(
+                RobotMap.CANID.BR_STEER_FALCON, 
+                RobotMap.CANID.BR_DRIVE_FALCON, 
+                RobotMap.CANID.BR_STEER_ENCODER, 
+                -Math.toRadians(135 + 180), 
+                BACK_RIGHT_OFFSET.getX(),
+                BACK_RIGHT_OFFSET.getY()
+        );
         m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         m_backRightModule.configNeutralMode(nm);
 
@@ -265,7 +291,7 @@ public class Drivetrain extends SubsystemBase {
         // temp4.setNeutralMode(nm);
     }
 
-    public SwerveModuleConstants CreateSwerveModuleConstants(
+    public static SwerveModuleConstants CreateSwerveModuleConstants(
         int steerId,
         int driveId,
         int cancoderId,
@@ -281,13 +307,13 @@ public class Drivetrain extends SubsystemBase {
         .withCANcoderOffset(cancoderOffset)
         .withLocationX(locationX)
         .withLocationY(locationY)
-        .withDriveMotorGearRatio(SwerveModuleSettings.DriveMotorGearRatio)
-        .withSteerMotorGearRatio(SwerveModuleSettings.SteerMotorGearRatio)
-        .withWheelRadius(SwerveModuleSettings.WheelRadius)
-        .withSlipCurrent(SwerveModuleSettings.SlipCurrent)
-        .withSteerMotorGains(SwerveModuleSettings.SteerMotorGaidns) // Intentionally spelled wrong to remind me that these need values before code will work
-        .withDriveMotorGains(SwerveModuleSettings.DriveMotorGains)
-        .withSteerMotorInverted(false);
+        .withDriveMotorGearRatio(SWERVE_SETTINGS.DriveMotorGearRatio)
+        .withSteerMotorGearRatio(SWERVE_SETTINGS.SteerMotorGearRatio)
+        .withWheelRadius(SWERVE_SETTINGS.wheelDiameter / 2)
+        .withSlipCurrent(SWERVE_SETTINGS.SlipCurrent)
+        .withSteerMotorGains(SWERVE_SETTINGS.SteerMotorGains)
+        .withDriveMotorGains(SWERVE_SETTINGS.DriveMotorGains)
+        .withSteerMotorInverted(SWERVE_SETTINGS.SteerMotorInverted);
 
         return constants;
     }
@@ -393,6 +419,8 @@ public class Drivetrain extends SubsystemBase {
         positions[2] = m_backLeftModule.getCachedPosition();
 
         positions[3] = m_backRightModule.getCachedPosition();
+
+        return positions;
     }
 
 } // end class Drivetrain
