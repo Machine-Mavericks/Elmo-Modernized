@@ -2,9 +2,12 @@ package frc.robot.subsystems;
 
 import java.util.Map;
 
+import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -30,34 +33,40 @@ import com.ctre.phoenix6.configs.Slot0Configs;
  * Subsystem representing the swerve drivetrain
  */
 public class Drivetrain extends SubsystemBase {
+    //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
 
-    // Useful:
+    // Helper class to ensure all constants are formatted correctly for Pheonix 6 swerve library
+    // Values are set based on old constants from SDS library
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
     public class SwerveModuleSettings {
-        /** Gear ratio between drive motor and wheel */
-        public final double DriveMotorGearRatio; 
+        /** Gear ratio between drive motor and wheel. Drive reduction constants taken from the original SDS library. 
+         * Reciprocal is taken to get expected format for number in pheonix library, for a better explaination, read the source code for SwerveModuleConstants*/
+        public static final double DriveMotorGearRatio = 1 / MK4_L1_DriveReduction; 
         /** Gear ratio between steer motor and CANcoder An example ratio for the SDS Mk4: 12.8 */
-        public final double SteerMotorGearRatio;
+        public static final double SteerMotorGearRatio = 1 / MK4_L1_SteerReduction;
         /** Wheel radius of the driving wheel in inches */
-        public final double wheelDiameter;
+        public static final double WheelDiameter = MK4_L1_WheelDiameter;
         /** The maximum amount of current the drive motors can apply without slippage */
-        public final double SlipCurrent = 400;
+        public static final double SlipCurrent = 400;
 
         /** The steer motor gains */
-        public final Slot0Configs SteerMotorGains = 2;
+        public static final Slot0Configs SteerMotorGains = new Slot0Configss(); // Intentionally misspelled to leave an error here. Remember to configure these before doing anything.
         /** The drive motor gains */
-        public final Slot0Configs DriveMotorGains = 2;
+        public static final Slot0Configs DriveMotorGains = new Slot0Configs();
+
+        /** Only option is Voltage without pro liscence */
+        public static final ClosedLoopOutputType DriveClosedLoopOutput = ClosedLoopOutputType.Voltage; 
+        public static final ClosedLoopOutputType SteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
+
+
+        public static final double SpeedAt12VoltsMps = MAX_VELOCITY_METERS_PER_SECOND; 
 
         /** True if the steering motor is reversed from the CANcoder */
-        public final boolean SteerMotorInverted;
+        public static final boolean DriveMotorInverted = MK4_L1_DriveInverted;
 
-        public SwerveModuleSettings(double driveMotorGearRatio, double steerMotorGearRatio, double wheelDiameter, boolean steerMotorInverted){
-            this.DriveMotorGearRatio = driveMotorGearRatio;
-            this.SteerMotorGearRatio = steerMotorGearRatio;
-            this.wheelDiameter = wheelDiameter;
 
-            this.SteerMotorInverted = steerMotorInverted;
-        }
+        /** True if the steering motor is reversed from the CANcoder */
+        public static final boolean SteerMotorInverted = MK4_L1_SteerInverted;
     }
 
     
@@ -67,7 +76,7 @@ public class Drivetrain extends SubsystemBase {
     public GenericEntry maxAccel;
     public GenericEntry speedLimitFactor;
 
-    public static final String CAN_BUS_NAME = "Elmo"; // TODO: ?????
+    public static final String CAN_BUS_NAME = "Elmo"; // TODO: What is our canbus name?? Do we even have one?
 
     /**
      * The left-to-right distance between the drivetrain wheels
@@ -110,8 +119,6 @@ public class Drivetrain extends SubsystemBase {
 
     public static final boolean MK4_L1_DriveInverted = true;
     public static final boolean MK4_L1_SteerInverted = true;
-
-    public static SwerveModuleSettings SWERVE_SETTINGS;
      
 
     // The formula for calculating the theoretical maximum velocity is:
@@ -176,7 +183,7 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
-        SWERVE_SETTINGS = new SwerveModuleSettings(1 / MK4_L1_DriveReduction, 1 / MK4_L1_SteerReduction, MK4_L1_WheelDiameter, true);
+        
         // SmartDashboard.putData("Field", m_field);
 
         tab = Shuffleboard.getTab("Drivetrain");
@@ -254,43 +261,9 @@ public class Drivetrain extends SubsystemBase {
         );
         m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         m_backRightModule.configNeutralMode(nm);
-
-        // m_frontLeftModule = Mk4SwerveModuleHelper.createFalcon500(
-        //         tab.getLayout("Front Left Module", BuiltInLayouts.kList)
-        //                 .withSize(2, 4)
-        //                 .withPosition(0, 0),
-        //         DRIVE_RATIO, RobotMap.CANID.FL_DRIVE_FALCON, RobotMap.CANID.FL_STEER_FALCON,
-        //         RobotMap.CANID.FL_STEER_ENCODER, -Math.toRadians(155 + 180));
-        
-
-        // m_frontRightModule = Mk4SwerveModuleHelper.createFalcon500(
-        //         tab.getLayout("Front right Module", BuiltInLayouts.kList)
-        //                 .withSize(2, 4)
-        //                 .withPosition(2, 0),
-        //         DRIVE_RATIO, RobotMap.CANID.FR_DRIVE_FALCON, RobotMap.CANID.FR_STEER_FALCON,
-        //         RobotMap.CANID.FR_STEER_ENCODER, -Math.toRadians(94 + 180));
-
-        // m_backLeftModule = Mk4SwerveModuleHelper.createFalcon500(
-        //         tab.getLayout("Back Left Module", BuiltInLayouts.kList)
-        //                 .withSize(2, 4)
-        //                 .withPosition(4, 0),
-        //         DRIVE_RATIO, RobotMap.CANID.BL_DRIVE_FALCON, RobotMap.CANID.BL_STEER_FALCON,
-        //         RobotMap.CANID.BL_STEER_ENCODER, -Math.toRadians(200 + 180));
-
-        // m_backRightModule = Mk4SwerveModuleHelper.createFalcon500(
-        //         tab.getLayout("Back Right Module", BuiltInLayouts.kList)
-        //                 .withSize(2, 4)
-        //                 .withPosition(6, 0),
-        //         DRIVE_RATIO, RobotMap.CANID.BR_DRIVE_FALCON, RobotMap.CANID.BR_STEER_FALCON,
-        //         RobotMap.CANID.BR_STEER_ENCODER, -Math.toRadians(135 + 180));
-        
-
-        // temp1.setNeutralMode(nm);
-        // temp2.setNeutralMode(nm);
-        // temp3.setNeutralMode(nm);
-        // temp4.setNeutralMode(nm);
     }
 
+    // It seems there is already a factory for SwerveModuleConstants
     public static SwerveModuleConstants CreateSwerveModuleConstants(
         int steerId,
         int driveId,
@@ -307,13 +280,17 @@ public class Drivetrain extends SubsystemBase {
         .withCANcoderOffset(cancoderOffset)
         .withLocationX(locationX)
         .withLocationY(locationY)
-        .withDriveMotorGearRatio(SWERVE_SETTINGS.DriveMotorGearRatio)
-        .withSteerMotorGearRatio(SWERVE_SETTINGS.SteerMotorGearRatio)
-        .withWheelRadius(SWERVE_SETTINGS.wheelDiameter / 2)
-        .withSlipCurrent(SWERVE_SETTINGS.SlipCurrent)
-        .withSteerMotorGains(SWERVE_SETTINGS.SteerMotorGains)
-        .withDriveMotorGains(SWERVE_SETTINGS.DriveMotorGains)
-        .withSteerMotorInverted(SWERVE_SETTINGS.SteerMotorInverted);
+        .withDriveMotorGearRatio(SwerveModuleSettings.DriveMotorGearRatio)
+        .withSteerMotorGearRatio(SwerveModuleSettings.SteerMotorGearRatio)
+        .withWheelRadius(SwerveModuleSettings.WheelDiameter / 2)
+        .withSlipCurrent(SwerveModuleSettings.SlipCurrent)
+        .withSteerMotorGains(SwerveModuleSettings.SteerMotorGains)
+        .withDriveMotorGains(SwerveModuleSettings.DriveMotorGains)
+        .withSteerMotorClosedLoopOutput(SwerveModuleSettings.SteerClosedLoopOutput)
+        .withDriveMotorClosedLoopOutput(SwerveModuleSettings.DriveClosedLoopOutput)
+        .withSpeedAt12VoltsMps(SwerveModuleSettings.SpeedAt12VoltsMps)
+        .withSteerMotorInverted(SwerveModuleSettings.SteerMotorInverted)
+        .withDriveMotorInverted(SwerveModuleSettings.DriveMotorInverted);
 
         return constants;
     }
@@ -369,11 +346,16 @@ public class Drivetrain extends SubsystemBase {
         //         m_states[3].angle.getRadians());
 
 
-        // Theoretically fine
-        m_frontLeftModule.apply(m_states[0], DriveRequestType.Velocity);
-        m_frontRightModule.apply(m_states[1], DriveRequestType.Velocity);
-        m_backLeftModule.apply(m_states[2], DriveRequestType.Velocity);
-        m_backRightModule.apply(m_states[3], DriveRequestType.Velocity);
+        // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
+        // For auto consistency we should aim for closed loop control
+        DriveRequestType driveRequestType = DriveRequestType.OpenLoopVoltage;
+
+
+        // Steer request type defaults correctly to MotionMagic
+        m_frontLeftModule.apply(m_states[0], driveRequestType); 
+        m_frontRightModule.apply(m_states[1], driveRequestType);
+        m_backLeftModule.apply(m_states[2], driveRequestType);
+        m_backRightModule.apply(m_states[3], driveRequestType);
 
 
         
