@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import java.util.Map;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotMap;
@@ -36,7 +37,7 @@ public class Intake extends SubsystemBase {
 
   /** Creates a new Intake. */
   public Intake() {
-    intakeFalcon.set(ControlMode.PercentOutput, 0);
+    intakeFalcon.set(0);
     initializeShuffleboard();
   }
 
@@ -50,13 +51,13 @@ public class Intake extends SubsystemBase {
  * @param motorSpeed percentage motor power, ranging from 0.0 to 1.0
  */
   public void setMotorSpeed(double motorSpeed) {
-    intakeFalcon.set(ControlMode.PercentOutput, motorSpeed);
+    intakeFalcon.set(motorSpeed);
   }
 
 
   /** Get intake motor speed in rpm */
   public double getMotorSpeed() {
-    return intakeFalcon.getSelectedSensorVelocity() * MOTORSPEEDCONVERSION;
+    return intakeFalcon.getVelocity().getValue() * MOTORSPEEDCONVERSION;
   }
 
 

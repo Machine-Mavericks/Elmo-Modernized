@@ -4,8 +4,6 @@
 
 package frc.robot.commands;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
@@ -29,13 +27,13 @@ public class ClimbCommand extends Command {
     if (DriverStation.getMatchTime() < 30.0) //do not deploy climber if it isn't endgame
       RobotContainer.climber.motorVelocity();
     else
-    RobotContainer.climber.m_climberFalcon.set(ControlMode.PercentOutput, 0.0);
+      RobotContainer.climber.stopMotor();
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    RobotContainer.climber.m_climberFalcon.set(ControlMode.PercentOutput, 0.0);
+    RobotContainer.climber.stopMotor();
   }
 
   // Returns true when the command should end.

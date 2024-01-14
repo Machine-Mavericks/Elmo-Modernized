@@ -4,12 +4,9 @@
 
 package frc.robot.commands;
 
-import javax.lang.model.util.ElementScanner6;
-import com.ctre.phoenix.motorcontrol.ControlMode;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
 public class ClimbDrive extends Command {

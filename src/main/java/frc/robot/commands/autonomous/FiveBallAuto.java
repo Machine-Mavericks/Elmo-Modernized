@@ -69,9 +69,4 @@ public class FiveBallAuto extends SequentialCommandGroup {
       new InstantCommand(()-> RobotContainer.intake.setMotorSpeed(0))
       );
   }
-
-  @Override
-  public boolean isFinished(){
-    return super.isFinished() && true;
-  }
 }

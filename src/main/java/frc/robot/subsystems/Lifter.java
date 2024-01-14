@@ -6,9 +6,7 @@ package frc.robot.subsystems;
 
 import javax.swing.text.StyledEditorKit.BoldAction;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
