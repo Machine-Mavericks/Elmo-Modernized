@@ -4,10 +4,10 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class BallTargeting extends SubsystemBase {
   private Limelight m_ballCamera;
@@ -46,23 +46,27 @@ public class BallTargeting extends SubsystemBase {
 public void SettoBallTarget()
 {
   IsTargettingBall = true;
-
-  // set ball pickup pipeline
-  if (DriverStation.getAlliance() == Alliance.Red)
-    m_ballCamera.setPipeline(1);
-  else
-    m_ballCamera.setPipeline(2);
+  DriverStation.getAlliance().ifPresent(alliance -> {
+    // set ball pickup pipeline
+    if (alliance == Alliance.Red)
+      m_ballCamera.setPipeline(1);
+    else
+      m_ballCamera.setPipeline(2);
+  });
 }
+
+
 /** Set to Climb Target */
 public void SettoClimbTarget()
 { 
   IsTargettingBall = false;
-  
-  // set ball pickup pipeline
-  if (DriverStation.getAlliance() == Alliance.Red)
-     m_ballCamera.setPipeline(7);
-  else
-    m_ballCamera.setPipeline(6);
+  DriverStation.getAlliance().ifPresent(alliance -> {
+    // set ball pickup pipeline
+    if (alliance == Alliance.Red)
+      m_ballCamera.setPipeline(7);
+    else
+      m_ballCamera.setPipeline(6);
+  });
 }
 
 /** Returns true if currently looking for balls */
@@ -129,17 +133,23 @@ public double getTargetVertAngle() {
         // if we are 'looking down', widen ball detection to look for non-square objects
         if (m_ballCameraTilt.getAngle() < -50.0)
         {
-          if (DriverStation.getAlliance() == Alliance.Red)
-           m_ballCamera.setPipeline(3);
-         else
-            m_ballCamera.setPipeline(4);
+          DriverStation.getAlliance().ifPresent(alliance -> {
+            if (alliance == Alliance.Red)
+              m_ballCamera.setPipeline(3);
+            else
+              m_ballCamera.setPipeline(4);
+          });
+          
         }
         else
         {
-         if (DriverStation.getAlliance() == Alliance.Red)
-           m_ballCamera.setPipeline(1);
-          else
-           m_ballCamera.setPipeline(2);
+          DriverStation.getAlliance().ifPresent(alliance -> {
+            if (alliance == Alliance.Red)
+              m_ballCamera.setPipeline(1);
+            else
+              m_ballCamera.setPipeline(2);
+          });
+          
         }
       }
     
@@ -155,10 +165,15 @@ public double getTargetVertAngle() {
       if (m_notargettimer > 1.0)
       {
         m_ballCameraTilt.setAngle (-14.4);
-        if (DriverStation.getAlliance() == Alliance.Red)
-          m_ballCamera.setPipeline(1);
-        else
-         m_ballCamera.setPipeline(2);
+
+        DriverStation.getAlliance().ifPresent(alliance -> {
+          if (alliance == Alliance.Red)
+            m_ballCamera.setPipeline(1);
+          else
+            m_ballCamera.setPipeline(2);
+        });
+
+        
       }
     }
   }

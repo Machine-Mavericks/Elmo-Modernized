@@ -4,12 +4,10 @@
 
 package frc.robot.commands;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.controller.PIDController;
-import java.lang.Math;
-import java.lang.annotation.Target;
 
 /** Command aims robot to hub.  Command finishes when robot within 1deg of center of hub. */
 public class AimToHub extends Command {

@@ -6,7 +6,6 @@ package frc.robot.subsystems;
 
 import java.util.ArrayList;
 
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
@@ -16,7 +15,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -120,7 +118,7 @@ public class Shooter extends SubsystemBase {
     initializeShuffleboard();
 
     // set up PWM to operate hood servos
-    m_servo.setBounds(2.0, 1.8, 1.5, 1.2, 1.0);
+    m_servo.setBoundsMicroseconds(2, 1, 1, 1, 1); // Todo: What?
 
     // set default hood target position and estimate
     m_HoodTargetPos = -0.5;
@@ -130,7 +128,7 @@ public class Shooter extends SubsystemBase {
   @Override
   public void periodic() {
     // set hood angle to current target
-    m_servo.setSpeed(m_HoodTargetPos);
+    m_servo.setPosition(m_HoodTargetPos);
 
     // update our internal estimate of hood position
     if (m_HoodEstimatedPos < m_HoodTargetPos)
@@ -157,7 +155,7 @@ public class Shooter extends SubsystemBase {
   }
 
   public double getShooterTargetSpeed() {
-    return rightShooterFalcon.getClosedLoopTarget() * ((10.0 / 2048.0) * 60);
+    return rightShooterFalcon.getClosedLoopReference().getValue() * 60;
   }
 
   /** This method will set the motors to the given motor speed
@@ -171,9 +169,8 @@ public class Shooter extends SubsystemBase {
     return -topShooterFalcon.getVelocity().getValue() * 60;
   }
 
-  public double getTopShooterTargetSpeed()
-  {
-    return -topShooterFalcon.getClosedLoopTarget() * ((10.0 / 2048.0) * 60);
+  public double getTopShooterTargetSpeed() {
+    return -topShooterFalcon.getClosedLoopReference().getValue() * 60;
   }
 
 
@@ -258,11 +255,11 @@ public class Shooter extends SubsystemBase {
     motorVoltage.setDouble(rightShooterFalcon.getMotorVoltage().getValue());
     leftMotorCurrent.setDouble(leftShooterFalcon.getSupplyCurrent().getValue());
     rightMotorCurrent.setDouble(rightShooterFalcon.getSupplyCurrent().getValue());
-    targetSpeed.setDouble(rightShooterFalcon.getClosedLoopTarget() * 60);
+    targetSpeed.setDouble(rightShooterFalcon.getClosedLoopReference().getValue() * 60);
     
     // update top shooter parameters
     topShooterSpeed.setDouble(topShooterFalcon.getVelocity().getValue() * 60);
-    topShootertargetSpeed.setDouble(topShooterFalcon.getClosedLoopTarget() * 60);
+    topShootertargetSpeed.setDouble(topShooterFalcon.getClosedLoopReference().getValue() * 60);
     
     // update hood parameters
     hoodTargetPos.setDouble(m_HoodTargetPos);

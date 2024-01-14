@@ -8,12 +8,16 @@ package frc.robot;
 
 
 import java.util.Map;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.shuffleboard.*;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
 /** Contains shuffleboard setup for generic main page not belonging to any subsubsystem

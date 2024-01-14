@@ -36,7 +36,7 @@ public class Drivetrain extends SubsystemBase {
     //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
 
     // Helper class to ensure all constants are formatted correctly for Pheonix 6 swerve library
-    // Values are set based on old constants from SDS library
+    // Values are set based on old constants from the SDS library
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
     public class SwerveModuleSettings {
         /** Gear ratio between drive motor and wheel. Drive reduction constants taken from the original SDS library. 
@@ -52,7 +52,7 @@ public class Drivetrain extends SubsystemBase {
         /** The steer motor gains */
         public static final Slot0Configs SteerMotorGains = new Slot0Configss(); // Intentionally misspelled to leave an error here. Remember to configure these before doing anything.
         /** The drive motor gains */
-        public static final Slot0Configs DriveMotorGains = new Slot0Configs();
+        public static final Slot0Configs DriveMotorGains = new Slot0Configs().wi;
 
         /** Only option is Voltage without pro liscence */
         public static final ClosedLoopOutputType DriveClosedLoopOutput = ClosedLoopOutputType.Voltage; 

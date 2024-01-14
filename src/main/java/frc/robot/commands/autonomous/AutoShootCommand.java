@@ -8,7 +8,6 @@ import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Robot;
 import frc.robot.RobotContainer;
 
 public class AutoShootCommand extends Command {

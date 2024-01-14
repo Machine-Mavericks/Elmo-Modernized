@@ -3,10 +3,9 @@
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot.subsystems;
-import frc.robot.RobotMap;
 import edu.wpi.first.wpilibj.PWM;
-import edu.wpi.first.wpilibj.motorcontrol.Victor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotMap;
 
 public class LEDBlinkin extends SubsystemBase {
 
