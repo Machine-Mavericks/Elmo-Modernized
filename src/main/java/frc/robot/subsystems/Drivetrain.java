@@ -46,12 +46,16 @@ public class Drivetrain extends SubsystemBase {
         /** The maximum amount of current the drive motors can apply without slippage */
         public static final double SlipCurrent = 400;
 
-        /** The steer motor gains */
-        public static final Slot0Configs SteerMotorGains = new Slot0Configss(); // Intentionally misspelled to leave an error here. Remember to configure these before doing anything.
-        /** The drive motor gains */
-        public static final Slot0Configs DriveMotorGains = new Slot0Configs();
 
-        /** Only option is Voltage without pro liscence */
+        // TODO: Figure out actual PID values to use. These were stolen from 
+        // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/Robot.java
+
+        /** The steer motor gains */
+        public static final Slot0Configs SteerMotorGains = new Slot0Configs().withKP(30).withKD(0.2); 
+        /** The drive motor gains */
+        public static final Slot0Configs DriveMotorGains = new Slot0Configs().withKP(1);
+
+        /** Only option is Voltage without pro liscence */ 
         public static final ClosedLoopOutputType DriveClosedLoopOutput = ClosedLoopOutputType.Voltage; 
         public static final ClosedLoopOutputType SteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
 
@@ -73,7 +77,7 @@ public class Drivetrain extends SubsystemBase {
     public GenericEntry maxAccel;
     public GenericEntry speedLimitFactor;
 
-    public static final String CAN_BUS_NAME = "Elmo"; // TODO: What is our canbus name?? Do we even have one?
+    public static final String CAN_BUS_NAME = "rio"; // If the drivetrain runs CANivore, change to name of desired CAN loop
 
     /**
      * The left-to-right distance between the drivetrain wheels
