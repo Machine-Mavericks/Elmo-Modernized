@@ -31,27 +31,27 @@ public class Climber extends SubsystemBase {
   GenericEntry encoderValue;
   GenericEntry ChosenSpeed;
 
-  public TalonFX m_climberFalcon; 
-  final VelocityVoltage m_velocityControl = new VelocityVoltage(0);
+  //public TalonFX m_climberFalcon; 
+  //final VelocityVoltage m_velocityControl = new VelocityVoltage(0);
 
   public Climber() {
     // create falcon motors
-    m_climberFalcon = new TalonFX(RobotMap.CANID.CLIMBER_FALCON);
+    // m_climberFalcon = new TalonFX(RobotMap.CANID.CLIMBER_FALCON);
   
-    m_climberFalcon.setPosition(0);
-    m_climberFalcon.setInverted(true);
+    // m_climberFalcon.setPosition(0);
+    // m_climberFalcon.setInverted(true);
       
-    TalonFXConfiguration talonConfig = new TalonFXConfiguration();
+    // TalonFXConfiguration talonConfig = new TalonFXConfiguration();
 
-    var slot0Configs = new Slot0Configs();
-    //slot0Configs.kV = 0.12;
-    slot0Configs.kP = 0.09;
-    //slot0Configs.kI = 0.48;
-    slot0Configs.kD = 0.0;
+    // var slot0Configs = new Slot0Configs();
+    // //slot0Configs.kV = 0.12;
+    // slot0Configs.kP = 0.09;
+    // //slot0Configs.kI = 0.48;
+    // slot0Configs.kD = 0.0;
 
-    talonConfig.Slot0 = slot0Configs;
+    // talonConfig.Slot0 = slot0Configs;
 
-    m_climberFalcon.getConfigurator().apply(talonConfig);
+    // m_climberFalcon.getConfigurator().apply(talonConfig);
 
     // m_climberFalcon.configForwardSoftLimitEnable(true,0);
     // m_climberFalcon.configForwardSoftLimitThreshold(8.80*48*2048.0);
@@ -85,18 +85,19 @@ public class Climber extends SubsystemBase {
   /** set motor posiiton */
   public void motorVelocity()
   {  
-    m_velocityControl.Slot = 0;
+    //m_velocityControl.Slot = 0;
     //m_climberFalcon.setControl(m_velocityControl.withVelocity(ChosenSpeed.getDouble(50) / 60));
     // ChosenSpeed.getDouble(3000)* (2048 / 600.0) 
     
   }
   /** stops the climbing motor*/
   public void stopMotor() {
-    m_climberFalcon.setControl(m_velocityControl.withVelocity(0));
+    //m_climberFalcon.setControl(m_velocityControl.withVelocity(0));
   }
  
   public double encoderVal() {
-    return (m_climberFalcon.getPosition().getValue());
+    //return (m_climberFalcon.getPosition().getValue());
+    return 0;
   }
 
 
@@ -131,6 +132,6 @@ public class Climber extends SubsystemBase {
 
   /** Update subsystem shuffle board page with climber values */
   private void updateShuffleboard() {
-    encoderValue.setDouble(m_climberFalcon.getPosition().getValue());
+    //encoderValue.setDouble(m_climberFalcon.getPosition().getValue());
   }
 }
