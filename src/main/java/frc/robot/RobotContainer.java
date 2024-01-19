@@ -104,8 +104,8 @@ public class RobotContainer {
     
     OI.releaseBallButton.whileTrue(new ReleaseBall());
 
-    OI.climbButton.whileTrue(new ClimbGroup());
-    OI.manualClimbButton.whileTrue(new ClimbCommand());
+    //OI.climbButton.whileTrue(new ClimbGroup());
+    //OI.manualClimbButton.whileTrue(new ClimbCommand());
  }
 
   /**

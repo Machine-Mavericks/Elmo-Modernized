@@ -86,7 +86,7 @@ public class Climber extends SubsystemBase {
   public void motorVelocity()
   {  
     m_velocityControl.Slot = 0;
-    m_climberFalcon.setControl(m_velocityControl.withVelocity(ChosenSpeed.getDouble(50) / 60));
+    //m_climberFalcon.setControl(m_velocityControl.withVelocity(ChosenSpeed.getDouble(50) / 60));
     // ChosenSpeed.getDouble(3000)* (2048 / 600.0) 
     
   }
