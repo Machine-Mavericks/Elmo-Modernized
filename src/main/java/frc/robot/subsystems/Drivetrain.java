@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.Map;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
@@ -53,9 +54,13 @@ public class Drivetrain extends SubsystemBase {
         // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/Robot.java
 
         /** The steer motor gains */
-        public static final Slot0Configs SteerMotorGains = new Slot0Configs().withKP(1).withKD(0.2); 
+        private static final Slot0Configs SteerMotorGains = new Slot0Configs()
+        .withKP(100).withKI(0).withKD(0.05)
+        .withKS(0).withKV(1.5).withKA(0);
         /** The drive motor gains */
-        public static final Slot0Configs DriveMotorGains = new Slot0Configs().withKP(1);
+        public static final Slot0Configs DriveMotorGains = new Slot0Configs()
+        .withKP(3).withKI(0).withKD(0)
+        .withKS(0).withKV(0).withKA(0);;
 
 
 
@@ -188,7 +193,6 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
-        
         // SmartDashboard.putData("Field", m_field);
 
         tab = Shuffleboard.getTab("Drivetrain");
@@ -229,7 +233,7 @@ public class Drivetrain extends SubsystemBase {
         );
         m_frontLeftModule = new SwerveModule(frontLeftConstants, CAN_BUS_NAME);
         m_frontLeftModule.configNeutralMode(nm);
-
+        m_frontLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
 
         // Init Front Right Module
         SwerveModuleConstants frontRightConstants = CreateSwerveModuleConstants(
@@ -242,6 +246,7 @@ public class Drivetrain extends SubsystemBase {
         );
         m_frontRightModule = new SwerveModule(frontRightConstants, CAN_BUS_NAME);
         m_frontRightModule.configNeutralMode(nm);
+        m_frontRightModule.getPosition(true); // Appears to refresh internal position used for optimization
 
 
         // Init Back Left Module
@@ -255,6 +260,7 @@ public class Drivetrain extends SubsystemBase {
         );
         m_backLeftModule = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
         m_backLeftModule.configNeutralMode(nm);
+        m_backLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
 
 
         // Init Back Right Module
@@ -268,6 +274,7 @@ public class Drivetrain extends SubsystemBase {
         );
         m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         m_backRightModule.configNeutralMode(nm);
+        m_backRightModule.getPosition(true); // Appears to refresh internal position used for optimization
     }
 
     // It seems there is already a factory for SwerveModuleConstants
@@ -337,7 +344,12 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic() {
+        m_frontLeftModule.getPosition(true);
+        m_frontRightModule.getPosition(true);
+        m_backLeftModule.getPosition(true);
+        m_backRightModule.getPosition(true);
 
+        
         m_states = m_kinematics.toSwerveModuleStates(m_chassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
