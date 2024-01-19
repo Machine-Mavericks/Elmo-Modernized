@@ -15,6 +15,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -24,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.RobotMap;
+import frc.robot.subsystems.LEDBlinkin.LED_PATTERN;
 
 
 /**
@@ -42,7 +44,7 @@ public class Drivetrain extends SubsystemBase {
         /** Gear ratio between steer motor and CANcoder An example ratio for the SDS Mk4: 12.8 */
         public static final double SteerMotorGearRatio = 1 / MK4_L1_SteerReduction;
         /** Wheel radius of the driving wheel in inches */
-        public static final double WheelDiameter = MK4_L1_WheelDiameter;
+        public static final double WheelDiameter = Units.metersToInches(MK4_L1_WheelDiameter);
         /** The maximum amount of current the drive motors can apply without slippage */
         public static final double SlipCurrent = 400;
 
@@ -51,9 +53,11 @@ public class Drivetrain extends SubsystemBase {
         // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/Robot.java
 
         /** The steer motor gains */
-        public static final Slot0Configs SteerMotorGains = new Slot0Configs().withKP(30).withKD(0.2); 
+        public static final Slot0Configs SteerMotorGains = new Slot0Configs().withKP(1).withKD(0.2); 
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs().withKP(1);
+
+
 
         /** Only option is Voltage without pro liscence */ 
         public static final ClosedLoopOutputType DriveClosedLoopOutput = ClosedLoopOutputType.Voltage; 
@@ -189,7 +193,9 @@ public class Drivetrain extends SubsystemBase {
 
         tab = Shuffleboard.getTab("Drivetrain");
 
-        resetModules(NeutralModeValue.Brake);
+
+        //TODO REST TO BRAKE
+        resetModules(NeutralModeValue.Coast);
 
                 /**Acceleration Limiting Slider*/
         maxAccel = tab.addPersistent("Max Acceleration", 0.05)
@@ -202,7 +208,7 @@ public class Drivetrain extends SubsystemBase {
         .withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(Map.of("min", 0, "max", 0.75))
         .getEntry();
-        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Brake);}))
+        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Coast);}))
         .withPosition(0,0)
         .withSize(2, 1);
 

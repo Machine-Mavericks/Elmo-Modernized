@@ -86,13 +86,13 @@ public class Climber extends SubsystemBase {
   public void motorVelocity()
   {  
     m_velocityControl.Slot = 0;
-    m_climberFalcon.setControl(m_velocityControl.withVelocity(ChosenSpeed.getDouble(50)));
+    m_climberFalcon.setControl(m_velocityControl.withVelocity(ChosenSpeed.getDouble(50) / 60));
     // ChosenSpeed.getDouble(3000)* (2048 / 600.0) 
     
   }
   /** stops the climbing motor*/
   public void stopMotor() {
-    m_climberFalcon.set(0);
+    m_climberFalcon.setControl(m_velocityControl.withVelocity(0));
   }
  
   public double encoderVal() {

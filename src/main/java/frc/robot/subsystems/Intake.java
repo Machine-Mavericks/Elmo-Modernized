@@ -33,7 +33,7 @@ public class Intake extends SubsystemBase {
   // Multiply by 10 to get pulses/second
   // Divide by 2048, motor has 2048 pulses in a revolution, we now have the number of rotations per second
   // Multiply by 60 to get rpm
-  public static double MOTORSPEEDCONVERSION = (10.0/2048.0)*60.0;
+  //public static double MOTORSPEEDCONVERSION = (10.0/2048.0)*60.0;
 
   /** Creates a new Intake. */
   public Intake() {
@@ -57,7 +57,7 @@ public class Intake extends SubsystemBase {
 
   /** Get intake motor speed in rpm */
   public double getMotorSpeed() {
-    return intakeFalcon.getVelocity().getValue() * MOTORSPEEDCONVERSION;
+    return intakeFalcon.getVelocity().getValue() * 60;
   }
 
 
