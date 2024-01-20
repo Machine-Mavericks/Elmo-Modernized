@@ -7,6 +7,7 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
@@ -26,7 +27,7 @@ public class SwerveOdometry extends SubsystemBase {
   final float DEGtoRAD = (float) (3.1415926 / 180.0);
 
   // create swerve drive odometry object
-  private SwerveDriveOdometry m_odometry;
+  private SwerveDrivePoseEstimator m_odometry;
 
   // subsystem shuffleboard controls
   private GenericEntry m_robotX;
@@ -44,7 +45,7 @@ public class SwerveOdometry extends SubsystemBase {
     // create robot odometry - set to (0,0,0)(x,y,ang)
 
     // initialize swerve drive odometry
-    m_odometry = new SwerveDriveOdometry(RobotContainer.drivetrain.getKinematics(),
+    m_odometry = new SwerveDrivePoseEstimator(RobotContainer.drivetrain.getKinematics(),
         new Rotation2d(0.0),
         RobotContainer.drivetrain.getSwervePositions(),
         new Pose2d(0.0, 0.0, new Rotation2d(0.0)));
@@ -119,17 +120,17 @@ public class SwerveOdometry extends SubsystemBase {
 
   /** Return current odometry x displacement (in m) */
   public double getX() {
-    return m_odometry.getPoseMeters().getX();
+    return m_odometry.getEstimatedPosition().getX();
   }
 
   /** Return current odometry y displacement (in m) */
   public double getY() {
-    return m_odometry.getPoseMeters().getY();
+    return m_odometry.getEstimatedPosition().getY();
   }
 
   // return current odometry angle (in deg)
   public double getAngle() {
-    return m_odometry.getPoseMeters().getRotation().getDegrees();
+    return m_odometry.getEstimatedPosition().getRotation().getDegrees();
   }
 
 

@@ -34,6 +34,7 @@ import frc.robot.subsystems.LEDBlinkin.LED_PATTERN;
  */
 public class Drivetrain extends SubsystemBase {
     //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
+    
 
     // Helper class to ensure all constants are formatted correctly for Pheonix 6 swerve library
     // Values are set based on old constants from the SDS library
@@ -60,7 +61,7 @@ public class Drivetrain extends SubsystemBase {
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
         .withKP(3).withKI(0).withKD(0)
-        .withKS(0).withKV(0).withKA(0);;
+        .withKS(0).withKV(0).withKA(0);
 
 
 
@@ -199,7 +200,7 @@ public class Drivetrain extends SubsystemBase {
 
 
         //TODO REST TO BRAKE
-        resetModules(NeutralModeValue.Coast);
+        resetModules(NeutralModeValue.Brake);
 
                 /**Acceleration Limiting Slider*/
         maxAccel = tab.addPersistent("Max Acceleration", 0.05)
@@ -212,7 +213,7 @@ public class Drivetrain extends SubsystemBase {
         .withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(Map.of("min", 0, "max", 0.75))
         .getEntry();
-        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Coast);}))
+        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Brake);}))
         .withPosition(0,0)
         .withSize(2, 1);
 
@@ -220,7 +221,7 @@ public class Drivetrain extends SubsystemBase {
 
     // Note: WPI's coordinate system is X forward, Y to the left so make sure all locations are with
     private void resetModules(NeutralModeValue nm) {
-        //final Mk4SwerveModuleHelper.GearRatio DRIVE_RATIO = Mk4SwerveModuleHelper.GearRatio.L1;
+        System.out.println("Resetting swerve modules");
 
         // Init Front Left Module
         SwerveModuleConstants frontLeftConstants = CreateSwerveModuleConstants(
@@ -354,12 +355,12 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
 
-        SmartDashboard.putString("UnoptimizedState:", m_states[0].toString());
-        SmartDashboard.putString("Error", m_frontLeftModule.getSteerMotor().getClosedLoopError().getValue().toString());
-        SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
-        SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
-        SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
-        SmartDashboard.putString("Cached pos: ", m_frontLeftModule.getCachedPosition().toString());
+        // SmartDashboard.putString("UnoptimizedState:", m_states[0].toString());
+        // SmartDashboard.putString("Error", m_frontLeftModule.getSteerMotor().getClosedLoopError().getValue().toString());
+        // SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
+        // SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
+        // SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
+        // SmartDashboard.putString("Cached pos: ", m_frontLeftModule.getCachedPosition().toString());
         //SmartDashboard.putString("Module Target Optimized", m_frontLeftModule.getCurrentState().toString());
 
         
