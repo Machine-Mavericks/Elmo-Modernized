@@ -68,7 +68,7 @@ public class DriveCommand extends Command {
       m_pidDelay = 10; 
     }
 
-    m_drivetrain.drive(new Translation2d(-yInput*Drivetrain.MAX_VELOCITY_METERS_PER_SECOND, xInput*Drivetrain.MAX_VELOCITY_METERS_PER_SECOND), rotInput*Drivetrain.MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND, true); 
+    m_drivetrain.drive(new Translation2d(-yInput*Drivetrain.MAX_VELOCITY_METERS_PER_SECOND, xInput*Drivetrain.MAX_VELOCITY_METERS_PER_SECOND), rotInput*Drivetrain.MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND, false); 
   }
 
   // Called once the command ends or is interrupted.

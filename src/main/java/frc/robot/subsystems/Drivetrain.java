@@ -55,8 +55,8 @@ public class Drivetrain extends SubsystemBase {
 
         /** The steer motor gains */
         private static final Slot0Configs SteerMotorGains = new Slot0Configs()
-        .withKP(100).withKI(0).withKD(0.05)
-        .withKS(0).withKV(1.5).withKA(0);
+        .withKP(20).withKI(0).withKD(0.05)
+        .withKS(0).withKV(1).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
         .withKP(3).withKI(0).withKD(0)
@@ -128,7 +128,7 @@ public class Drivetrain extends SubsystemBase {
     public static final double MK4_L1_WheelDiameter = 0.10033;
 
     public static final boolean MK4_L1_DriveInverted = true;
-    public static final boolean MK4_L1_SteerInverted = true;
+    public static final boolean MK4_L1_SteerInverted = false;
      
 
     // The formula for calculating the theoretical maximum velocity is:
@@ -354,6 +354,15 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
 
+        SmartDashboard.putString("UnoptimizedState:", m_states[0].toString());
+        SmartDashboard.putString("Error", m_frontLeftModule.getSteerMotor().getClosedLoopError().getValue().toString());
+        SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
+        SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
+        SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
+        SmartDashboard.putString("Cached pos: ", m_frontLeftModule.getCachedPosition().toString());
+        //SmartDashboard.putString("Module Target Optimized", m_frontLeftModule.getCurrentState().toString());
+
+        
         
         // m_frontLeftModule.set(m_states[0].speedMetersPerSecond / MAX_VELOCITY_METERS_PER_SECOND * MAX_VOLTAGE,
         //         m_states[0].angle.getRadians());
