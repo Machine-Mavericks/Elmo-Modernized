@@ -227,7 +227,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.FL_STEER_FALCON, 
                 RobotMap.CANID.FL_DRIVE_FALCON, 
                 RobotMap.CANID.FL_STEER_ENCODER, 
-                -Math.toRadians(155 + 180), 
+                21.79 / 360,  // -Math.toRadians(155 + 180)
                 FRONT_LEFT_OFFSET.getX(),
                 FRONT_LEFT_OFFSET.getY()
         );
@@ -240,7 +240,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.FR_STEER_FALCON, 
                 RobotMap.CANID.FR_DRIVE_FALCON, 
                 RobotMap.CANID.FR_STEER_ENCODER, 
-                -Math.toRadians(94 + 180), 
+                -274.92 / 360, // Degrees converted to rotations
                 FRONT_RIGHT_OFFSET.getX(),
                 FRONT_RIGHT_OFFSET.getY()
         );
@@ -254,7 +254,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.BL_STEER_FALCON, 
                 RobotMap.CANID.BL_DRIVE_FALCON, 
                 RobotMap.CANID.BL_STEER_ENCODER, 
-                -Math.toRadians(200 + 180), 
+                -17.22 / 360, 
                 BACK_LEFT_OFFSET.getX(),
                 BACK_LEFT_OFFSET.getY()
         );
@@ -268,7 +268,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.BR_STEER_FALCON, 
                 RobotMap.CANID.BR_DRIVE_FALCON, 
                 RobotMap.CANID.BR_STEER_ENCODER, 
-                -Math.toRadians(135 + 180), 
+                47.9 / 360, 
                 BACK_RIGHT_OFFSET.getX(),
                 BACK_RIGHT_OFFSET.getY()
         );
@@ -354,13 +354,23 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
 
-        // SmartDashboard.putString("UnoptimizedState:", m_states[0].toString());
-        // SmartDashboard.putString("Error", m_frontLeftModule.getSteerMotor().getClosedLoopError().getValue().toString());
+        //SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
+        
+        // SmartDashboard.putStringArray("Module Current", new String[]{
+        //     m_frontLeftModule.getCurrentState().toString(),
+        //     m_frontRightModule.getCurrentState().toString(),
+        //     m_backLeftModule.getCurrentState().toString(),
+        //     m_backRightModule.getCurrentState().toString()
+        // });
+        SmartDashboard.putString("FrontLeftState", m_frontLeftModule.getCurrentState().toString());
+        SmartDashboard.putString("FrontRightState", m_frontRightModule.getCurrentState().toString());
+        SmartDashboard.putString("BackLeftState", m_backLeftModule.getCurrentState().toString());
+        SmartDashboard.putString("BackRightState", m_backRightModule.getCurrentState().toString());
         // SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
         // SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
         // SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
         // SmartDashboard.putString("Cached pos: ", m_frontLeftModule.getCachedPosition().toString());
-        //SmartDashboard.putString("Module Target Optimized", m_frontLeftModule.getCurrentState().toString());
+        // SmartDashboard.putString("Module Target Optimized", m_frontLeftModule.getCurrentState().toString());
 
         
         
