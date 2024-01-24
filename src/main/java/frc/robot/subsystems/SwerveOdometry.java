@@ -19,8 +19,10 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
+import frc.robot.util.RobotShuffleboardManager;
+import frc.robot.util.ShuffleHelper;
 
-public class SwerveOdometry extends SubsystemBase {
+public class SwerveOdometry extends SubsystemBase implements ShuffleHelper {
 
   // constant to convert degrees to radians
   
@@ -50,8 +52,10 @@ public class SwerveOdometry extends SubsystemBase {
         RobotContainer.drivetrain.getSwervePositions(),
         new Pose2d(0.0, 0.0, new Rotation2d(0.0)));
 
-    // create odometry shuffleboard page
-    initializeShuffleboard();
+    // // create odometry shuffleboard page
+    // initializeShuffleboard();
+
+    RobotShuffleboardManager.RegisterShuffleUser(this);
   }
 
   // -------------------- Initialize and Update Odometry Methods
@@ -99,9 +103,6 @@ public class SwerveOdometry extends SubsystemBase {
       // update the robot's odometry
       m_odometry.update(gyroangle, positions);
     }
-    
-    // update odemetry shuffleboard page
-    updateShuffleboard();
   }
 
   // -------------------- Robot Current Odometry Access Methods --------------------
@@ -157,7 +158,7 @@ public class SwerveOdometry extends SubsystemBase {
   // -------------------- Subsystem Shuffleboard Methods --------------------
 
   /** Initialize subsystem shuffleboard page and controls */
-  private void initializeShuffleboard() {
+  public void initializeShuffleboard() {
     // Create odometry page in shuffleboard
     ShuffleboardTab Tab = Shuffleboard.getTab("Odometry");
 
@@ -180,7 +181,7 @@ public class SwerveOdometry extends SubsystemBase {
   }
 
   /** Update subsystem shuffle board page with current odometry values */
-  private void updateShuffleboard() {
+  public void updateShuffleboard() {
     // write current robot odometry
     m_robotX.setDouble(getX());
     m_robotY.setDouble(getY());

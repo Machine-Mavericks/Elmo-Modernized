@@ -64,9 +64,8 @@ public class Drivetrain extends SubsystemBase {
         .withKS(0).withKV(1).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
-        .withKP(0.4).withKI(0).withKD(0)
+        .withKP(0.4).withKI(0).withKD(0) // TODO: Tune this value
         .withKS(0).withKV(0).withKA(0);
-
 
 
         /** Only option is Voltage without pro liscence */ 
@@ -232,10 +231,11 @@ public class Drivetrain extends SubsystemBase {
 
         // Init all arrays
         m_swerveModules = new SwerveModule[MODULE_COUNT];
-        m_allSignals = new BaseStatusSignal[MODULE_COUNT * 4];
         m_positions = new SwerveModulePosition[MODULE_COUNT];
         m_states = new SwerveModuleState[MODULE_COUNT];
         m_targetStates = new SwerveModuleState[MODULE_COUNT];
+
+        m_allSignals = new BaseStatusSignal[MODULE_COUNT * 4];
         
         // Init Front Left Module
         SwerveModuleConstants frontLeftConstants = CreateSwerveModuleConstants(
@@ -289,7 +289,9 @@ public class Drivetrain extends SubsystemBase {
 
             module.configNeutralMode(nm);
             AddModuleSignals(module, i);
-            m_positions[i] = module.getPosition(true); // Appears to refresh internal position used for optimization
+            m_positions[i] = m_swerveModules[i].getPosition(true); // Appears to refresh internal position used for optimization
+            m_states[i] = new SwerveModuleState(); // Initialize to blank states at the beginning, will be overwritten in first periodic loop
+            m_targetStates[i] = new SwerveModuleState();
         }
 
 
@@ -407,13 +409,7 @@ public class Drivetrain extends SubsystemBase {
 
         for (int i = 0; i < m_swerveModules.length; i++){
             m_positions[i] = m_swerveModules[i].getPosition(false);
-        }
-
-        for (int i = 0; i < m_swerveModules.length; i++){
             m_states[i] = m_swerveModules[i].getCurrentState();
-        }
-
-        for (int i = 0; i < m_swerveModules.length; i++){
             m_targetStates[i] = m_swerveModules[i].getTargetState();
         }
     }
