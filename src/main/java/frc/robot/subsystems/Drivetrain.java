@@ -1,13 +1,9 @@
 package frc.robot.subsystems;
 
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.StatusCode;
-import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.mechanisms.swerve.PhoenixUnsafeAccess;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
@@ -17,10 +13,6 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.filter.LinearFilter;
-import edu.wpi.first.math.filter.MedianFilter;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
@@ -30,8 +22,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.wpilibj.Threads;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -48,13 +38,12 @@ import frc.robot.RobotMap;
 public class Drivetrain extends SubsystemBase {
     public static final double updateDt = 0.02;
     
-
     //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
     
     // Helper class to ensure all constants are formatted correctly for Pheonix 6 swerve library
     // Values are set based on old constants from the SDS library
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
-    public class SwerveModuleSettings {
+    public class FormattedSwerveModuleSettings {
         /** Gear ratio between drive motor and wheel. Drive reduction constants taken from the original SDS library. 
          * Reciprocal is taken to get expected format for number in pheonix library, for a better explaination, read the source code for SwerveModuleConstants*/
         public static final double DriveMotorGearRatio = 1 / MK4_L1_DriveReduction; 
@@ -95,12 +84,6 @@ public class Drivetrain extends SubsystemBase {
         public static final boolean SteerMotorInverted = MK4_L1_SteerInverted;
     }
 
-    
-
-            
-    // value controlled on shuffleboard to stop the jerkiness of the robot by limiting its acceleration
-    public GenericEntry maxAccel;
-    public GenericEntry speedLimitFactor;
 
     public static final String CAN_BUS_NAME = "rio"; // If the drivetrain runs CANivore, change to name of desired CAN loop
     public static final int MODULE_COUNT = 4;
@@ -165,26 +148,17 @@ public class Drivetrain extends SubsystemBase {
     public static final double MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND = MAX_VELOCITY_METERS_PER_SECOND /
             Math.hypot(TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
 
-    /* The model representing the drivetrain's kinematics */
-    private final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
-        FRONT_LEFT_OFFSET,
-        FRONT_RIGHT_OFFSET,
-        BACK_LEFT_OFFSET,
-        BACK_RIGHT_OFFSET
-    );
-            
 
-    // These are our modules. We set them in the constructor.
-    private SwerveModule m_frontLeftModule;
-    private SwerveModule m_frontRightModule;
-    private SwerveModule m_backLeftModule;
-    private SwerveModule m_backRightModule;
 
-    /* Target chassisSpeeds (robot relative) */
-    private ChassisSpeeds m_chassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
-
-    private ShuffleboardTab tab;
-
+    // -------------------- Swerve Module Data Arrays --------------------
+    
+    /*
+     * Swerve module data is ordered as follows
+     * FrontLeft
+     * FrontRight
+     * BackLeft
+     * BackRight
+     */
     // Current swerve module states - contains speed(m/s) and angle for each swerve module
     SwerveModuleState[] m_states;
     // Current swerve module states - contains speed(m/s) and angle for each swerve module
@@ -193,11 +167,32 @@ public class Drivetrain extends SubsystemBase {
     SwerveModulePosition[] m_positions;
     // Odometry signals
     BaseStatusSignal[] m_allSignals;
+    // The swerve modules themselves
+    private SwerveModule[] m_swerveModules;
 
-    // Configured in constructor
+
+    // The model representing the drivetrain's kinematics
+    private final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
+        FRONT_LEFT_OFFSET,
+        FRONT_RIGHT_OFFSET,
+        BACK_LEFT_OFFSET,
+        BACK_RIGHT_OFFSET
+    );
+    
+    // Target chassisSpeeds (robot relative)
+    private ChassisSpeeds m_chassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+
+    // Odometry settings configured in constructor
     public final double ODOMETRY_HZ;  
     public final boolean USING_CAN_FD;
 
+    // Shuffleboard classes
+    private ShuffleboardTab tab;
+    // value controlled on shuffleboard to stop the jerkiness of the robot by limiting its acceleration
+    public GenericEntry maxAccel;
+    public GenericEntry speedLimitFactor;
+
+    
     /**
      * Create a new swerve drivetrain
      * 
@@ -235,8 +230,12 @@ public class Drivetrain extends SubsystemBase {
     private void resetModules(NeutralModeValue nm) {
         System.out.println("Resetting swerve modules");
 
+        // Init all arrays
+        m_swerveModules = new SwerveModule[MODULE_COUNT];
         m_allSignals = new BaseStatusSignal[MODULE_COUNT * 4];
         m_positions = new SwerveModulePosition[MODULE_COUNT];
+        m_states = new SwerveModuleState[MODULE_COUNT];
+        m_targetStates = new SwerveModuleState[MODULE_COUNT];
         
         // Init Front Left Module
         SwerveModuleConstants frontLeftConstants = CreateSwerveModuleConstants(
@@ -247,10 +246,7 @@ public class Drivetrain extends SubsystemBase {
                 FRONT_LEFT_OFFSET.getX(),
                 FRONT_LEFT_OFFSET.getY()
         );
-        m_frontLeftModule = new SwerveModule(frontLeftConstants, CAN_BUS_NAME);
-        m_frontLeftModule.configNeutralMode(nm);
-        AddModuleSignals(m_frontLeftModule, 0);
-        m_positions[0] = m_frontLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
+        m_swerveModules[0] = new SwerveModule(frontLeftConstants, CAN_BUS_NAME);
 
         // Init Front Right Module
         SwerveModuleConstants frontRightConstants = CreateSwerveModuleConstants(
@@ -261,10 +257,7 @@ public class Drivetrain extends SubsystemBase {
                 FRONT_RIGHT_OFFSET.getX(),
                 FRONT_RIGHT_OFFSET.getY()
         );
-        m_frontRightModule = new SwerveModule(frontRightConstants, CAN_BUS_NAME);
-        m_frontRightModule.configNeutralMode(nm);
-        AddModuleSignals(m_frontRightModule, 1);
-        m_positions[1] = m_frontRightModule.getPosition(true); // Appears to refresh internal position used for optimization
+        m_swerveModules[1] = new SwerveModule(frontRightConstants, CAN_BUS_NAME);
 
 
         // Init Back Left Module
@@ -276,10 +269,7 @@ public class Drivetrain extends SubsystemBase {
                 BACK_LEFT_OFFSET.getX(),
                 BACK_LEFT_OFFSET.getY()
         );
-        m_backLeftModule = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
-        m_backLeftModule.configNeutralMode(nm);
-        AddModuleSignals(m_backLeftModule, 2);
-        m_positions[2] = m_backLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
+        m_swerveModules[2] = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
 
 
         // Init Back Right Module
@@ -291,10 +281,17 @@ public class Drivetrain extends SubsystemBase {
                 BACK_RIGHT_OFFSET.getX(),
                 BACK_RIGHT_OFFSET.getY()
         );
-        m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
-        m_backRightModule.configNeutralMode(nm);
-        AddModuleSignals(m_backRightModule, 3);
-        m_positions[3] = m_backRightModule.getPosition(true); // Appears to refresh internal position used for optimization
+        m_swerveModules[3] = new SwerveModule(backRightConstants, CAN_BUS_NAME);
+        
+
+        for (int i = 0; i < m_swerveModules.length; i++){
+            SwerveModule module = m_swerveModules[i];
+
+            module.configNeutralMode(nm);
+            AddModuleSignals(module, i);
+            m_positions[i] = module.getPosition(true); // Appears to refresh internal position used for optimization
+        }
+
 
         /* Make sure all signals update at the correct update frequency */
         BaseStatusSignal.setUpdateFrequencyForAll(ODOMETRY_HZ, m_allSignals);
@@ -325,17 +322,17 @@ public class Drivetrain extends SubsystemBase {
         .withCANcoderOffset(cancoderOffset)
         .withLocationX(locationX)
         .withLocationY(locationY)
-        .withDriveMotorGearRatio(SwerveModuleSettings.DriveMotorGearRatio)
-        .withSteerMotorGearRatio(SwerveModuleSettings.SteerMotorGearRatio)
-        .withWheelRadius(SwerveModuleSettings.WheelDiameter / 2)
-        .withSlipCurrent(SwerveModuleSettings.SlipCurrent)
-        .withSteerMotorGains(SwerveModuleSettings.SteerMotorGains)
-        .withDriveMotorGains(SwerveModuleSettings.DriveMotorGains)
-        .withSteerMotorClosedLoopOutput(SwerveModuleSettings.SteerClosedLoopOutput)
-        .withDriveMotorClosedLoopOutput(SwerveModuleSettings.DriveClosedLoopOutput)
-        .withSpeedAt12VoltsMps(SwerveModuleSettings.SpeedAt12VoltsMps)
-        .withSteerMotorInverted(SwerveModuleSettings.SteerMotorInverted)
-        .withDriveMotorInverted(SwerveModuleSettings.DriveMotorInverted);
+        .withDriveMotorGearRatio(FormattedSwerveModuleSettings.DriveMotorGearRatio)
+        .withSteerMotorGearRatio(FormattedSwerveModuleSettings.SteerMotorGearRatio)
+        .withWheelRadius(FormattedSwerveModuleSettings.WheelDiameter / 2)
+        .withSlipCurrent(FormattedSwerveModuleSettings.SlipCurrent)
+        .withSteerMotorGains(FormattedSwerveModuleSettings.SteerMotorGains)
+        .withDriveMotorGains(FormattedSwerveModuleSettings.DriveMotorGains)
+        .withSteerMotorClosedLoopOutput(FormattedSwerveModuleSettings.SteerClosedLoopOutput)
+        .withDriveMotorClosedLoopOutput(FormattedSwerveModuleSettings.DriveClosedLoopOutput)
+        .withSpeedAt12VoltsMps(FormattedSwerveModuleSettings.SpeedAt12VoltsMps)
+        .withSteerMotorInverted(FormattedSwerveModuleSettings.SteerMotorInverted)
+        .withDriveMotorInverted(FormattedSwerveModuleSettings.DriveMotorInverted);
 
         return constants;
     }
@@ -372,8 +369,8 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Ensure sensor readings are up to date
         updateOdometryData();
-        
 
         // Look ahead in time one control loop
         // Pose2d robotDeltaPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
@@ -388,10 +385,10 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Processed Speeds", discretizedChassisSpeeds.toString());
 
-        SmartDashboard.putString("FrontLeftState", m_frontLeftModule.getCurrentState().toString());
-        SmartDashboard.putString("FrontRightState", m_frontRightModule.getCurrentState().toString());
-        SmartDashboard.putString("BackLeftState", m_backLeftModule.getCurrentState().toString());
-        SmartDashboard.putString("BackRightState", m_backRightModule.getCurrentState().toString());
+        SmartDashboard.putString("FrontLeftState", m_swerveModules[0].getCurrentState().toString());
+        SmartDashboard.putString("FrontRightState", m_swerveModules[1].getCurrentState().toString());
+        SmartDashboard.putString("BackLeftState", m_swerveModules[2].getCurrentState().toString());
+        SmartDashboard.putString("BackRightState", m_swerveModules[3].getCurrentState().toString());
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
@@ -399,28 +396,25 @@ public class Drivetrain extends SubsystemBase {
 
 
         // Steer request type defaults correctly to MotionMagic
-        m_frontLeftModule.apply(targetStates[0], driveRequestType); 
-        m_frontRightModule.apply(targetStates[1], driveRequestType);
-        m_backLeftModule.apply(targetStates[2], driveRequestType);
-        m_backRightModule.apply(targetStates[3], driveRequestType);        
+        for (int i = 0; i < m_swerveModules.length; i++){
+            m_swerveModules[i].apply(targetStates[i], driveRequestType); 
+        }     
     }
 
     public void updateOdometryData(){
         // Refresh odometry data
         BaseStatusSignal.refreshAll(m_allSignals);
 
-        SwerveModule[] swerveModules = new SwerveModule[] {m_frontLeftModule, m_frontRightModule, m_backLeftModule, m_backRightModule};
-
-        for (int i = 0; i < swerveModules.length; i++){
-            m_positions[i] = swerveModules[i].getPosition(false);
+        for (int i = 0; i < m_swerveModules.length; i++){
+            m_positions[i] = m_swerveModules[i].getPosition(false);
         }
 
-        for (int i = 0; i < swerveModules.length; i++){
-            m_states[i] = swerveModules[i].getCurrentState();
+        for (int i = 0; i < m_swerveModules.length; i++){
+            m_states[i] = m_swerveModules[i].getCurrentState();
         }
 
-        for (int i = 0; i < swerveModules.length; i++){
-            m_targetStates[i] = swerveModules[i].getTargetState();
+        for (int i = 0; i < m_swerveModules.length; i++){
+            m_targetStates[i] = m_swerveModules[i].getTargetState();
         }
     }
 
