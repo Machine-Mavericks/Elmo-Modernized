@@ -47,7 +47,7 @@ public class SwerveOdometry extends SubsystemBase {
     // initialize swerve drive odometry
     m_odometry = new SwerveDrivePoseEstimator(RobotContainer.drivetrain.getKinematics(),
         new Rotation2d(0.0),
-        RobotContainer.drivetrain.getSwervePositions(),
+        RobotContainer.drivetrain.getSwervePositions(false),
         new Pose2d(0.0, 0.0, new Rotation2d(0.0)));
 
     // create odometry shuffleboard page
@@ -81,14 +81,7 @@ public class SwerveOdometry extends SubsystemBase {
     Pose2d position = new Pose2d(x, y, new Rotation2d(robotangle * DEGtoRAD));
 
     // set robot odometry
-    m_odometry.resetPosition(new Rotation2d(gyroangle * DEGtoRAD), RobotContainer.drivetrain.getSwervePositions(), position);  // new Rotation2d(gyroangle * DEGtoRAD)
-  }
-
-  public void setPositionHub(double dist) {
-    double theta = getAngle()-180;
-    double x = 8.23-dist*Math.cos(Math.toRadians(theta));
-    double y = 4.11-dist*Math.sin(Math.toRadians(theta));
-    setPosition(x,y,getAngle(),RobotContainer.gyro.getYaw());
+    m_odometry.resetPosition(new Rotation2d(gyroangle * DEGtoRAD), RobotContainer.drivetrain.getSwervePositions(false), position);  // new Rotation2d(gyroangle * DEGtoRAD)
   }
 
   /** Update current robot dometry - called by scheduler at 50Hz */

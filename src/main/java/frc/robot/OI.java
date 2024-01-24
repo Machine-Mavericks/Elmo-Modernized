@@ -5,8 +5,8 @@ import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
- * This class cointains definitions for the robot's hardware devices.
- * These include components such as motor controllers and soleniods used by the subsystems.
+ * This class cointains definitions for the robot's operator interface devices
+ * This mostly consists of controller mappings. Also handles basic input processing (eg. deadzoning) 
  */
 public class OI {
 

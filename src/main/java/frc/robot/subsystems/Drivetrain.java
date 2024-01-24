@@ -1,9 +1,13 @@
 package frc.robot.subsystems;
 
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusCode;
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.mechanisms.swerve.PhoenixUnsafeAccess;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
@@ -13,6 +17,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -26,6 +31,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.Threads;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -40,10 +46,12 @@ import frc.robot.RobotMap;
  * Subsystem representing the swerve drivetrain
  */
 public class Drivetrain extends SubsystemBase {
+    protected final ReadWriteLock m_stateLock = new ReentrantReadWriteLock();
     public static final double updateDt = 0.02;
-    //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
     
 
+    //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
+    
     // Helper class to ensure all constants are formatted correctly for Pheonix 6 swerve library
     // Values are set based on old constants from the SDS library
     // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/CTRSwerve/SwerveDriveConstantsCreator.java
@@ -99,34 +107,26 @@ public class Drivetrain extends SubsystemBase {
     public static final int MODULE_COUNT = 4;
     /**
      * The left-to-right distance between the drivetrain wheels
-     *
      * Should be measured from center to center.
      */
     public static final double TRACKWIDTH_METERS = 0.6;
     /**
      * The front-to-back distance between the drivetrain wheels.
-     *
      * Should be measured from center to center.
      */
     public static final double WHEELBASE_METERS = 0.6;
 
     /**
      * The maximum voltage that will be delivered to the drive motors.
-     * <p>
      * This can be reduced to cap the robot's maximum speed. Typically, this is
      * useful during initial testing of the robot.
      */
     public static final double MAX_VOLTAGE = 12.0;
 
-
-
-    // Front left
+    // Swerve module physical positions
     public static final Translation2d FRONT_LEFT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
-    // Front right
     public static final Translation2d FRONT_RIGHT_OFFSET = new Translation2d(TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
-    // Back left
     public static final Translation2d BACK_LEFT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
-    // Back right
     public static final Translation2d BACK_RIGHT_OFFSET = new Translation2d(-TRACKWIDTH_METERS / 2.0, -WHEELBASE_METERS / 2.0);
 
 
@@ -148,10 +148,8 @@ public class Drivetrain extends SubsystemBase {
     // An example of this constant for a Mk4 L2 module with NEOs to drive is:
     // 5880.0 / 60.0 / SdsModuleConfigurations.MK4_L2.getDriveReduction() *
     // SdsModuleConfigurations.MK4_L2.getWheelDiameter() * Math.PI
-
     /**
      * The maximum velocity of the robot in meters per second.
-     * <p>
      * This is a measure of how fast the robot should be able to drive in a straight
      * line.
      */
@@ -161,7 +159,6 @@ public class Drivetrain extends SubsystemBase {
 
     /**
      * The maximum angular velocity of the robot in radians per second.
-     * <p>
      * This is a measure of how fast the robot can rotate in place.
      */
     // Here we calculate the theoretical maximum angular velocity. You can also
@@ -169,9 +166,7 @@ public class Drivetrain extends SubsystemBase {
     public static final double MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND = MAX_VELOCITY_METERS_PER_SECOND /
             Math.hypot(TRACKWIDTH_METERS / 2.0, WHEELBASE_METERS / 2.0);
 
-    /**
-     * The model representing the drivetrain's kinematics
-     */
+    /* The model representing the drivetrain's kinematics */
     private final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
         FRONT_LEFT_OFFSET,
         FRONT_RIGHT_OFFSET,
@@ -186,12 +181,17 @@ public class Drivetrain extends SubsystemBase {
     private SwerveModule m_backLeftModule;
     private SwerveModule m_backRightModule;
 
+    /* Target chassisSpeeds (robot relative) */
     private ChassisSpeeds m_chassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
     private ShuffleboardTab tab;
 
     // Swerve module states - contains speed(m/s) and angle for each swerve module
     SwerveModuleState[] m_states;
+
+    // Configured in constructor
+    public final double ODOMETRY_THREAD_HZ;  
+    public final boolean USING_CAN_FD;
 
     /**
      * Create a new swerve drivetrain
@@ -203,6 +203,9 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
+        USING_CAN_FD = CANBus.isNetworkFD(CAN_BUS_NAME);
+        ODOMETRY_THREAD_HZ = USING_CAN_FD ? 250 : 100;
+
         tab = Shuffleboard.getTab("Drivetrain");
 
         resetModules(NeutralModeValue.Brake);
@@ -332,9 +335,6 @@ public class Drivetrain extends SubsystemBase {
                 -translation.getY());
         Double newrotation = -rotation;
 
-        // not sure what this line was intended to do. KN Feb 11/2022
-        // rotation *= 2.0 / Math.hypot(WHEELBASE_METERS, TRACKWIDTH_METERS);
-
         // determine chassis speeds
         if (fieldOriented) {
             m_chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(newtranslation.getX(),
@@ -346,16 +346,14 @@ public class Drivetrain extends SubsystemBase {
                     newtranslation.getY(),
                     newrotation);
         }
-
-        ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
     }
 
     @Override
     public void periodic() {
         //TODO: Replace with odometry thread
-        m_frontLeftModule.getPosition(true);
-        m_frontRightModule.getPosition(true);
-        m_backLeftModule.getPosition(true);
+        // m_frontLeftModule.getPosition(true);
+        // m_frontRightModule.getPosition(true);
+        // m_backLeftModule.getPosition(true);
         m_backRightModule.getPosition(true);
 
         // Look ahead in time one control loop
@@ -363,7 +361,8 @@ public class Drivetrain extends SubsystemBase {
         // // Black magic
         // Twist2d velocity_twist2d = new Pose2d().log(robotDeltaPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
         // ChassisSpeeds discretizedChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
-        /* Can be replaced with new WPILib call to discretize speeds */
+        
+        /* Above can be replaced with new WPILib call to discretize speeds */
         ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
 
         m_states = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
@@ -387,8 +386,7 @@ public class Drivetrain extends SubsystemBase {
         m_backRightModule.apply(m_states[3], driveRequestType);        
     }
 
-    // -------------------- Kinematics and Swerve Module Status Public Access
-    // Methods --------------------
+    // -------------------- Kinematics and Swerve Module Status Public Access Methods --------------------
 
     /** Returns kinematics of drive system */
     public SwerveDriveKinematics getKinematics() {
@@ -415,18 +413,23 @@ public class Drivetrain extends SubsystemBase {
         return states;
     }
 
-    /* Exists because a bunch of updated functions take SwerveModulePositions now?? */
-    public SwerveModulePosition[] getSwervePositions(){
+    /** Returns swerve module positions, optionally, latency compensation / prediction can be enabled. YMMV */
+    public SwerveModulePosition[] getSwervePositions(boolean LatencyCompensate){
         // create array of module positions to return
         SwerveModulePosition[] positions = new SwerveModulePosition[4];
 
-        positions[0] = m_frontLeftModule.getCachedPosition();
-
-        positions[1] = m_frontRightModule.getCachedPosition();
-
-        positions[2] = m_backLeftModule.getCachedPosition();
-
-        positions[3] = m_backRightModule.getCachedPosition();
+        if (LatencyCompensate) {
+            positions[0] = m_frontLeftModule.getPosition(false);
+            positions[1] = m_frontRightModule.getPosition(false);
+            positions[2] = m_backLeftModule.getPosition(false);
+            positions[3] = m_backRightModule.getPosition(false);
+        }else{
+            positions[0] = m_frontLeftModule.getCachedPosition();
+            positions[1] = m_frontRightModule.getCachedPosition();
+            positions[2] = m_backLeftModule.getCachedPosition();
+            positions[3] = m_backRightModule.getCachedPosition();
+        }
+       
 
         return positions;
     }
@@ -466,13 +469,13 @@ public class Drivetrain extends SubsystemBase {
             AddModuleSignals(m_frontRightModule, 1);
             AddModuleSignals(m_backLeftModule, 2);
             AddModuleSignals(m_backRightModule, 3);
+            m_allSignals[i].setUpdateFrequency(MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND)
+
             
-            m_allSignals[m_allSignals.length - 2] = m_yawGetter;
-            m_allSignals[m_allSignals.length - 1] = m_angularVelocity;
         }
 
         private void AddModuleSignals(SwerveModule module, int index){
-            var signals = PhoenixUnsafeAccess.getSwerveSignals(module);
+            var signals = PhoenixUnsafeAccess.getSwerveSignals(module); // Dirty hack part 1
             m_allSignals[(index * 4) + 0] = signals[0];
             m_allSignals[(index * 4) + 1] = signals[1];
             m_allSignals[(index * 4) + 2] = signals[2];
@@ -510,7 +513,7 @@ public class Drivetrain extends SubsystemBase {
 
         public void run() {
             /* Make sure all signals update at the correct update frequency */
-            BaseStatusSignal.setUpdateFrequencyForAll(UpdateFrequency, m_allSignals);
+            BaseStatusSignal.setUpdateFrequencyForAll(ODOMETRY_THREAD_HZ, m_allSignals);
             Threads.setCurrentThreadPriority(true, START_THREAD_PRIORITY);
 
             /* Run as fast as possible, our signals will control the timing */
@@ -518,11 +521,11 @@ public class Drivetrain extends SubsystemBase {
                 /* Synchronously wait for all signals in drivetrain */
                 /* Wait up to twice the period of the update frequency */
                 StatusCode status;
-                if (IsOnCANFD) {
-                    status = BaseStatusSignal.waitForAll(2.0 / UpdateFrequency, m_allSignals);
+                if (USING_CAN_FD) {
+                    status = BaseStatusSignal.waitForAll(2.0 / ODOMETRY_THREAD_HZ, m_allSignals);
                 } else {
                     /* Wait for the signals to update */
-                    Timer.delay(1.0 / UpdateFrequency);
+                    Timer.delay(1.0 / ODOMETRY_THREAD_HZ);
                     status = BaseStatusSignal.refreshAll(m_allSignals);
                 }
 
@@ -534,37 +537,35 @@ public class Drivetrain extends SubsystemBase {
                     /* We don't care about the peaks, as they correspond to GC events, and we want the period generally low passed */
                     averageLoopTime = lowPass.calculate(peakRemover.calculate(currentTime - lastTime));
 
-                    /* Get status of first element */
-                    if (status.isOK()) {
-                        SuccessfulDaqs++;
-                    } else {
-                        FailedDaqs++;
-                    }
 
                     /* Now update odometry */
-                    /* Keep track of the change in azimuth rotations */
-                    for (int i = 0; i < ModuleCount; ++i) {
-                        m_modulePositions[i] = Modules[i].getPosition(false);
-                    }
-                    double yawDegrees = BaseStatusSignal.getLatencyCompensatedValue(
-                            m_yawGetter, m_angularVelocity);
+                    /* Keep track of the change in encoder rotations */
+                    /* Status signals have automatically already been updated, and don't need refreshing */
+                    SwerveModulePosition[] positions = new SwerveModulePosition[4];
+
+                    positions[0] = m_frontLeftModule.getPosition(false);
+                    positions[1] = m_frontRightModule.getPosition(false);
+                    positions[2] = m_backLeftModule.getPosition(false);
+                    positions[3] = m_backRightModule.getPosition(false);
+
+
+                    // Gyro latency compensation. Using a navX, so isn't all that easy, disabled for now
+                    // double yawDegrees = BaseStatusSignal.getLatencyCompensatedValue(
+                    //         m_yawGetter, m_angularVelocity);
 
                     /* Keep track of previous and current pose to account for the carpet vector */
-                    m_odometry.update(Rotation2d.fromDegrees(yawDegrees), m_modulePositions);
+                    m_odometry.update(Rotation2d.fromDegrees(RobotContainer.gyro.getYaw()), positions);
 
                     /* And now that we've got the new odometry, update the controls */
-                    m_requestParameters.currentPose = m_odometry.getEstimatedPosition()
-                            .relativeTo(new Pose2d(0, 0, m_fieldRelativeOffset));
+                    m_requestParameters.currentPose = m_odometry.getEstimatedPosition();
                     m_requestParameters.kinematics = m_kinematics;
-                    m_requestParameters.swervePositions = m_moduleLocations;
+                    m_requestParameters.swervePositions = positions;
                     m_requestParameters.timestamp = currentTime;
                     m_requestParameters.updatePeriod = 1.0 / UpdateFrequency;
 
-                    m_requestToApply.apply(m_requestParameters, Modules);
+                    //m_requestToApply.apply(m_requestParameters, Modules);
 
                     /* Update our cached state with the newly updated data */
-                    m_cachedState.FailedDaqs = FailedDaqs;
-                    m_cachedState.SuccessfulDaqs = SuccessfulDaqs;
                     m_cachedState.Pose = m_odometry.getEstimatedPosition();
                     m_cachedState.OdometryPeriod = averageLoopTime;
 
@@ -579,14 +580,14 @@ public class Drivetrain extends SubsystemBase {
                         m_cachedState.ModuleTargets[i] = Modules[i].getTargetState();
                     }
 
-                    if (m_telemetryFunction != null) {
-                        /* Log our state */
-                        m_telemetryFunction.accept(m_cachedState);
-                    }
                 } finally {
                     m_stateLock.writeLock().unlock();
                 }
             }
+        }
+
+        public OdometryData getOdometryData(){
+            return m_odometryData;
         }
     } // end class OdometryUpdateThread
 
