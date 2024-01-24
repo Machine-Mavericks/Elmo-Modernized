@@ -2,7 +2,10 @@ package frc.robot.subsystems;
 
 import java.util.Map;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.mechanisms.swerve.PhoenixUnsafeAccess;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
@@ -10,6 +13,8 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -20,6 +25,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -62,7 +68,7 @@ public class Drivetrain extends SubsystemBase {
         .withKS(0).withKV(1).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
-        .withKP(3).withKI(0).withKD(0)
+        .withKP(0.4).withKI(0).withKD(0)
         .withKS(0).withKV(0).withKA(0);
 
 
@@ -90,7 +96,7 @@ public class Drivetrain extends SubsystemBase {
     public GenericEntry speedLimitFactor;
 
     public static final String CAN_BUS_NAME = "rio"; // If the drivetrain runs CANivore, change to name of desired CAN loop
-
+    public static final int MODULE_COUNT = 4;
     /**
      * The left-to-right distance between the drivetrain wheels
      *
@@ -142,6 +148,7 @@ public class Drivetrain extends SubsystemBase {
     // An example of this constant for a Mk4 L2 module with NEOs to drive is:
     // 5880.0 / 60.0 / SdsModuleConfigurations.MK4_L2.getDriveReduction() *
     // SdsModuleConfigurations.MK4_L2.getWheelDiameter() * Math.PI
+
     /**
      * The maximum velocity of the robot in meters per second.
      * <p>
@@ -339,36 +346,30 @@ public class Drivetrain extends SubsystemBase {
                     newtranslation.getY(),
                     newrotation);
         }
+
+        ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
     }
 
     @Override
     public void periodic() {
+        //TODO: Replace with odometry thread
         m_frontLeftModule.getPosition(true);
         m_frontRightModule.getPosition(true);
         m_backLeftModule.getPosition(true);
         m_backRightModule.getPosition(true);
 
-        
         // Look ahead in time one control loop
-        Pose2d robotVelocityPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
-        // Black magic
-        Twist2d velocity_twist2d = new Pose2d().log(robotVelocityPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
-        ChassisSpeeds velCompChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
+        // Pose2d robotDeltaPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
+        // // Black magic
+        // Twist2d velocity_twist2d = new Pose2d().log(robotDeltaPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
+        // ChassisSpeeds discretizedChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
+        /* Can be replaced with new WPILib call to discretize speeds */
+        ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
 
-
-
-        m_states = m_kinematics.toSwerveModuleStates(velCompChassisSpeeds);
+        m_states = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
-        SmartDashboard.putString("Speeds", velCompChassisSpeeds.toString());
+        SmartDashboard.putString("Processed Speeds", discretizedChassisSpeeds.toString());
 
-        SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
-        
-        // SmartDashboard.putStringArray("Module Current", new String[]{
-        //     m_frontLeftModule.getCurrentState().toString(),
-        //     m_frontRightModule.getCurrentState().toString(),
-        //     m_backLeftModule.getCurrentState().toString(),
-        //     m_backRightModule.getCurrentState().toString()
-        // });
         SmartDashboard.putString("FrontLeftState", m_frontLeftModule.getCurrentState().toString());
         SmartDashboard.putString("FrontRightState", m_frontRightModule.getCurrentState().toString());
         SmartDashboard.putString("BackLeftState", m_backLeftModule.getCurrentState().toString());
@@ -383,10 +384,7 @@ public class Drivetrain extends SubsystemBase {
         m_frontLeftModule.apply(m_states[0], driveRequestType); 
         m_frontRightModule.apply(m_states[1], driveRequestType);
         m_backLeftModule.apply(m_states[2], driveRequestType);
-        m_backRightModule.apply(m_states[3], driveRequestType);
-
-
-        
+        m_backRightModule.apply(m_states[3], driveRequestType);        
     }
 
     // -------------------- Kinematics and Swerve Module Status Public Access
@@ -432,5 +430,164 @@ public class Drivetrain extends SubsystemBase {
 
         return positions;
     }
+
+    /* Runs odometry on another thread to reduce latency. Modified from SwerveDrivetrain.java in Phoenix 6 */
+    public class OdometryUpdateThread {
+        /**
+         * Priority level to set the DAQ thread to.
+         * This is a value between 0 and 99, with 99 indicating higher priority and 0 indicating lower priority.
+         */
+        protected static final int START_THREAD_PRIORITY = 1; // Testing shows 1 (minimum realtime) is sufficient for tighter
+                                                            // odometry loops.
+                                                            // If the odometry period is far away from the desired frequency,
+                                                            // increasing this may help
+
+        protected final Thread m_thread;
+        protected volatile boolean m_running = false;
+
+        protected final BaseStatusSignal[] m_allSignals;
+
+        protected final MedianFilter peakRemover = new MedianFilter(3);
+        protected final LinearFilter lowPass = LinearFilter.movingAverage(50);
+        protected double lastTime = 0;
+        protected double currentTime = 0;
+        protected double averageLoopTime = 0;
+
+        public OdometryUpdateThread() {
+            m_thread = new Thread(this::run);
+            /* Mark this thread as a "daemon" (background) thread
+             * so it doesn't hold up program shutdown */
+            m_thread.setDaemon(true);
+
+            /* 4 signals for each module + 2 for Pigeon2 */
+            m_allSignals = new BaseStatusSignal[(MODULE_COUNT * 4) + 2];
+
+            AddModuleSignals(m_frontLeftModule, 0);
+            AddModuleSignals(m_frontRightModule, 1);
+            AddModuleSignals(m_backLeftModule, 2);
+            AddModuleSignals(m_backRightModule, 3);
+            
+            m_allSignals[m_allSignals.length - 2] = m_yawGetter;
+            m_allSignals[m_allSignals.length - 1] = m_angularVelocity;
+        }
+
+        private void AddModuleSignals(SwerveModule module, int index){
+            var signals = PhoenixUnsafeAccess.getSwerveSignals(module);
+            m_allSignals[(index * 4) + 0] = signals[0];
+            m_allSignals[(index * 4) + 1] = signals[1];
+            m_allSignals[(index * 4) + 2] = signals[2];
+            m_allSignals[(index * 4) + 3] = signals[3];
+        }
+
+        /**
+         * Starts the odometry thread.
+         */
+        public void start() {
+            m_running = true;
+            m_thread.start();
+        }
+
+        /**
+         * Stops the odometry thread.
+         */
+        public void stop() {
+            stop(0);
+        }
+
+        /**
+         * Stops the odometry thread with a timeout.
+         *
+         * @param millis The time to wait in milliseconds
+         */
+        public void stop(long millis) {
+            m_running = false;
+            try {
+                m_thread.join(millis);
+            } catch (final InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        public void run() {
+            /* Make sure all signals update at the correct update frequency */
+            BaseStatusSignal.setUpdateFrequencyForAll(UpdateFrequency, m_allSignals);
+            Threads.setCurrentThreadPriority(true, START_THREAD_PRIORITY);
+
+            /* Run as fast as possible, our signals will control the timing */
+            while (m_running) {
+                /* Synchronously wait for all signals in drivetrain */
+                /* Wait up to twice the period of the update frequency */
+                StatusCode status;
+                if (IsOnCANFD) {
+                    status = BaseStatusSignal.waitForAll(2.0 / UpdateFrequency, m_allSignals);
+                } else {
+                    /* Wait for the signals to update */
+                    Timer.delay(1.0 / UpdateFrequency);
+                    status = BaseStatusSignal.refreshAll(m_allSignals);
+                }
+
+                try {
+                    m_stateLock.writeLock().lock();
+
+                    lastTime = currentTime;
+                    currentTime = Utils.getCurrentTimeSeconds();
+                    /* We don't care about the peaks, as they correspond to GC events, and we want the period generally low passed */
+                    averageLoopTime = lowPass.calculate(peakRemover.calculate(currentTime - lastTime));
+
+                    /* Get status of first element */
+                    if (status.isOK()) {
+                        SuccessfulDaqs++;
+                    } else {
+                        FailedDaqs++;
+                    }
+
+                    /* Now update odometry */
+                    /* Keep track of the change in azimuth rotations */
+                    for (int i = 0; i < ModuleCount; ++i) {
+                        m_modulePositions[i] = Modules[i].getPosition(false);
+                    }
+                    double yawDegrees = BaseStatusSignal.getLatencyCompensatedValue(
+                            m_yawGetter, m_angularVelocity);
+
+                    /* Keep track of previous and current pose to account for the carpet vector */
+                    m_odometry.update(Rotation2d.fromDegrees(yawDegrees), m_modulePositions);
+
+                    /* And now that we've got the new odometry, update the controls */
+                    m_requestParameters.currentPose = m_odometry.getEstimatedPosition()
+                            .relativeTo(new Pose2d(0, 0, m_fieldRelativeOffset));
+                    m_requestParameters.kinematics = m_kinematics;
+                    m_requestParameters.swervePositions = m_moduleLocations;
+                    m_requestParameters.timestamp = currentTime;
+                    m_requestParameters.updatePeriod = 1.0 / UpdateFrequency;
+
+                    m_requestToApply.apply(m_requestParameters, Modules);
+
+                    /* Update our cached state with the newly updated data */
+                    m_cachedState.FailedDaqs = FailedDaqs;
+                    m_cachedState.SuccessfulDaqs = SuccessfulDaqs;
+                    m_cachedState.Pose = m_odometry.getEstimatedPosition();
+                    m_cachedState.OdometryPeriod = averageLoopTime;
+
+                    if (m_cachedState.ModuleStates == null) {
+                        m_cachedState.ModuleStates = new SwerveModuleState[Modules.length];
+                    }
+                    if (m_cachedState.ModuleTargets == null) {
+                        m_cachedState.ModuleTargets = new SwerveModuleState[Modules.length];
+                    }
+                    for (int i = 0; i < Modules.length; ++i) {
+                        m_cachedState.ModuleStates[i] = Modules[i].getCurrentState();
+                        m_cachedState.ModuleTargets[i] = Modules[i].getTargetState();
+                    }
+
+                    if (m_telemetryFunction != null) {
+                        /* Log our state */
+                        m_telemetryFunction.accept(m_cachedState);
+                    }
+                } finally {
+                    m_stateLock.writeLock().unlock();
+                }
+            }
+        }
+    } // end class OdometryUpdateThread
 
 } // end class Drivetrain
