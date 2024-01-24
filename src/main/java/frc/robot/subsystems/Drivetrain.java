@@ -193,15 +193,11 @@ public class Drivetrain extends SubsystemBase {
      * @param navx             Pigeon IMU
      */
     public Drivetrain() {
-        // SmartDashboard.putData("Field", m_field);
-
         tab = Shuffleboard.getTab("Drivetrain");
 
-
-        //TODO REST TO BRAKE
         resetModules(NeutralModeValue.Brake);
 
-                /**Acceleration Limiting Slider*/
+        /**Acceleration Limiting Slider*/
         maxAccel = tab.addPersistent("Max Acceleration", 0.05)
         .withPosition(8, 0)
         .withWidget(BuiltInWidgets.kNumberSlider)
@@ -354,7 +350,7 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
 
-        //SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
+        SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
         
         // SmartDashboard.putStringArray("Module Current", new String[]{
         //     m_frontLeftModule.getCurrentState().toString(),
@@ -366,23 +362,6 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putString("FrontRightState", m_frontRightModule.getCurrentState().toString());
         SmartDashboard.putString("BackLeftState", m_backLeftModule.getCurrentState().toString());
         SmartDashboard.putString("BackRightState", m_backRightModule.getCurrentState().toString());
-        // SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
-        // SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
-        // SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
-        // SmartDashboard.putString("Cached pos: ", m_frontLeftModule.getCachedPosition().toString());
-        // SmartDashboard.putString("Module Target Optimized", m_frontLeftModule.getCurrentState().toString());
-
-        
-        
-        // m_frontLeftModule.set(m_states[0].speedMetersPerSecond / MAX_VELOCITY_METERS_PER_SECOND * MAX_VOLTAGE,
-        //         m_states[0].angle.getRadians());
-        // m_frontRightModule.set(m_states[1].speedMetersPerSecond / MAX_VELOCITY_METERS_PER_SECOND * MAX_VOLTAGE,
-        //         m_states[1].angle.getRadians());
-        // m_backLeftModule.set(m_states[2].speedMetersPerSecond / MAX_VELOCITY_METERS_PER_SECOND * MAX_VOLTAGE,
-        //         m_states[2].angle.getRadians());
-        // m_backRightModule.set(m_states[3].speedMetersPerSecond / MAX_VELOCITY_METERS_PER_SECOND * MAX_VOLTAGE,
-        //         m_states[3].angle.getRadians());
-
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
