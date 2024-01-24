@@ -30,6 +30,7 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.LEDBlinkin;
 import frc.robot.subsystems.Lifter;
 import frc.robot.subsystems.PowerPanel;
+import frc.robot.subsystems.PrototypeShooter;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveOdometry;
 
@@ -59,6 +60,7 @@ public class RobotContainer {
   public static final BallTargeting ballTargeting = new BallTargeting();
   public static final HubTargeting hubTargeting = new HubTargeting();
   public static final Climber climber = new Climber();
+  public static final PrototypeShooter peashooter = new PrototypeShooter();
 
   /**
    * Initialise the container for the robot. Contains subsystems, OI devices, and
