@@ -10,8 +10,10 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -32,6 +34,7 @@ import frc.robot.RobotMap;
  * Subsystem representing the swerve drivetrain
  */
 public class Drivetrain extends SubsystemBase {
+    public static final double updateDt = 0.02;
     //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
     
 
@@ -346,9 +349,17 @@ public class Drivetrain extends SubsystemBase {
         m_backRightModule.getPosition(true);
 
         
-        m_states = m_kinematics.toSwerveModuleStates(m_chassisSpeeds);
+        // Look ahead in time one control loop
+        Pose2d robotVelocityPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
+        // Black magic
+        Twist2d velocity_twist2d = new Pose2d().log(robotVelocityPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
+        ChassisSpeeds velCompChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
+
+
+
+        m_states = m_kinematics.toSwerveModuleStates(velCompChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
-        SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
+        SmartDashboard.putString("Speeds", velCompChassisSpeeds.toString());
 
         SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
         
