@@ -46,7 +46,6 @@ import frc.robot.RobotMap;
  * Subsystem representing the swerve drivetrain
  */
 public class Drivetrain extends SubsystemBase {
-    protected final ReadWriteLock m_stateLock = new ReentrantReadWriteLock();
     public static final double updateDt = 0.02;
     
 
@@ -186,11 +185,17 @@ public class Drivetrain extends SubsystemBase {
 
     private ShuffleboardTab tab;
 
-    // Swerve module states - contains speed(m/s) and angle for each swerve module
+    // Current swerve module states - contains speed(m/s) and angle for each swerve module
     SwerveModuleState[] m_states;
+    // Current swerve module states - contains speed(m/s) and angle for each swerve module
+    SwerveModuleState[] m_targetStates;
+    // Current swerve module positions - contains number of meters wheel has rotated as well as module angle
+    SwerveModulePosition[] m_positions;
+    // Odometry signals
+    BaseStatusSignal[] m_allSignals;
 
     // Configured in constructor
-    public final double ODOMETRY_THREAD_HZ;  
+    public final double ODOMETRY_HZ;  
     public final boolean USING_CAN_FD;
 
     /**
@@ -204,7 +209,7 @@ public class Drivetrain extends SubsystemBase {
      */
     public Drivetrain() {
         USING_CAN_FD = CANBus.isNetworkFD(CAN_BUS_NAME);
-        ODOMETRY_THREAD_HZ = USING_CAN_FD ? 250 : 100;
+        ODOMETRY_HZ = USING_CAN_FD ? 250 : 100;
 
         tab = Shuffleboard.getTab("Drivetrain");
 
@@ -224,13 +229,15 @@ public class Drivetrain extends SubsystemBase {
         tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Brake);}))
         .withPosition(0,0)
         .withSize(2, 1);
-
     }
 
     // Note: WPI's coordinate system is X forward, Y to the left so make sure all locations are with
     private void resetModules(NeutralModeValue nm) {
         System.out.println("Resetting swerve modules");
 
+        m_allSignals = new BaseStatusSignal[MODULE_COUNT * 4];
+        m_positions = new SwerveModulePosition[MODULE_COUNT];
+        
         // Init Front Left Module
         SwerveModuleConstants frontLeftConstants = CreateSwerveModuleConstants(
                 RobotMap.CANID.FL_STEER_FALCON, 
@@ -242,7 +249,8 @@ public class Drivetrain extends SubsystemBase {
         );
         m_frontLeftModule = new SwerveModule(frontLeftConstants, CAN_BUS_NAME);
         m_frontLeftModule.configNeutralMode(nm);
-        m_frontLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
+        AddModuleSignals(m_frontLeftModule, 0);
+        m_positions[0] = m_frontLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
 
         // Init Front Right Module
         SwerveModuleConstants frontRightConstants = CreateSwerveModuleConstants(
@@ -255,7 +263,8 @@ public class Drivetrain extends SubsystemBase {
         );
         m_frontRightModule = new SwerveModule(frontRightConstants, CAN_BUS_NAME);
         m_frontRightModule.configNeutralMode(nm);
-        m_frontRightModule.getPosition(true); // Appears to refresh internal position used for optimization
+        AddModuleSignals(m_frontRightModule, 1);
+        m_positions[1] = m_frontRightModule.getPosition(true); // Appears to refresh internal position used for optimization
 
 
         // Init Back Left Module
@@ -269,7 +278,8 @@ public class Drivetrain extends SubsystemBase {
         );
         m_backLeftModule = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
         m_backLeftModule.configNeutralMode(nm);
-        m_backLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
+        AddModuleSignals(m_backLeftModule, 2);
+        m_positions[2] = m_backLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
 
 
         // Init Back Right Module
@@ -283,7 +293,19 @@ public class Drivetrain extends SubsystemBase {
         );
         m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         m_backRightModule.configNeutralMode(nm);
-        m_backRightModule.getPosition(true); // Appears to refresh internal position used for optimization
+        AddModuleSignals(m_backRightModule, 3);
+        m_positions[3] = m_backRightModule.getPosition(true); // Appears to refresh internal position used for optimization
+
+        /* Make sure all signals update at the correct update frequency */
+        BaseStatusSignal.setUpdateFrequencyForAll(ODOMETRY_HZ, m_allSignals);
+    }
+
+    private void AddModuleSignals(SwerveModule module, int index){
+        var signals = PhoenixUnsafeAccess.getSwerveSignals(module); // Dirty hack
+        m_allSignals[(index * 4) + 0] = signals[0];
+        m_allSignals[(index * 4) + 1] = signals[1];
+        m_allSignals[(index * 4) + 2] = signals[2];
+        m_allSignals[(index * 4) + 3] = signals[3];
     }
 
     // It seems there is already a factory for SwerveModuleConstants
@@ -350,11 +372,8 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic() {
-        //TODO: Replace with odometry thread
-        // m_frontLeftModule.getPosition(true);
-        // m_frontRightModule.getPosition(true);
-        // m_backLeftModule.getPosition(true);
-        m_backRightModule.getPosition(true);
+        updateOdometryData();
+        
 
         // Look ahead in time one control loop
         // Pose2d robotDeltaPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
@@ -365,8 +384,8 @@ public class Drivetrain extends SubsystemBase {
         /* Above can be replaced with new WPILib call to discretize speeds */
         ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
 
-        m_states = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
-        SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
+        SwerveModuleState[] targetStates = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Processed Speeds", discretizedChassisSpeeds.toString());
 
         SmartDashboard.putString("FrontLeftState", m_frontLeftModule.getCurrentState().toString());
@@ -380,10 +399,29 @@ public class Drivetrain extends SubsystemBase {
 
 
         // Steer request type defaults correctly to MotionMagic
-        m_frontLeftModule.apply(m_states[0], driveRequestType); 
-        m_frontRightModule.apply(m_states[1], driveRequestType);
-        m_backLeftModule.apply(m_states[2], driveRequestType);
-        m_backRightModule.apply(m_states[3], driveRequestType);        
+        m_frontLeftModule.apply(targetStates[0], driveRequestType); 
+        m_frontRightModule.apply(targetStates[1], driveRequestType);
+        m_backLeftModule.apply(targetStates[2], driveRequestType);
+        m_backRightModule.apply(targetStates[3], driveRequestType);        
+    }
+
+    public void updateOdometryData(){
+        // Refresh odometry data
+        BaseStatusSignal.refreshAll(m_allSignals);
+
+        SwerveModule[] swerveModules = new SwerveModule[] {m_frontLeftModule, m_frontRightModule, m_backLeftModule, m_backRightModule};
+
+        for (int i = 0; i < swerveModules.length; i++){
+            m_positions[i] = swerveModules[i].getPosition(false);
+        }
+
+        for (int i = 0; i < swerveModules.length; i++){
+            m_states[i] = swerveModules[i].getCurrentState();
+        }
+
+        for (int i = 0; i < swerveModules.length; i++){
+            m_targetStates[i] = swerveModules[i].getTargetState();
+        }
     }
 
     // -------------------- Kinematics and Swerve Module Status Public Access Methods --------------------
@@ -395,200 +433,27 @@ public class Drivetrain extends SubsystemBase {
 
     /**
      * Returns speed and angle status of all swerve modules
-     * Returns array of length of of SwerveModuleStates
+     * @return array of length of number of swerve modules
      */
     public SwerveModuleState[] getSwerveStates() {
-
-        // create array of module states to return
-        SwerveModuleState[] states = new SwerveModuleState[4];
-        
-        states[0] = m_frontLeftModule.getCurrentState();
-
-        states[1] = m_frontRightModule.getCurrentState();
-
-        states[2] = m_backLeftModule.getCurrentState();
-
-        states[3] = m_backRightModule.getCurrentState();
-
-        return states;
+        return m_states;
     }
 
-    /** Returns swerve module positions, optionally, latency compensation / prediction can be enabled. YMMV */
-    public SwerveModulePosition[] getSwervePositions(boolean LatencyCompensate){
-        // create array of module positions to return
-        SwerveModulePosition[] positions = new SwerveModulePosition[4];
-
-        if (LatencyCompensate) {
-            positions[0] = m_frontLeftModule.getPosition(false);
-            positions[1] = m_frontRightModule.getPosition(false);
-            positions[2] = m_backLeftModule.getPosition(false);
-            positions[3] = m_backRightModule.getPosition(false);
-        }else{
-            positions[0] = m_frontLeftModule.getCachedPosition();
-            positions[1] = m_frontRightModule.getCachedPosition();
-            positions[2] = m_backLeftModule.getCachedPosition();
-            positions[3] = m_backRightModule.getCachedPosition();
-        }
-       
-
-        return positions;
+    /**
+     * Returns targeted speed and angle status of all swerve modules
+     * @return array of length of number of swerve modules
+     */
+    public SwerveModuleState[] getTargetSwerveStates() {
+        return m_targetStates;
     }
 
-    /* Runs odometry on another thread to reduce latency. Modified from SwerveDrivetrain.java in Phoenix 6 */
-    public class OdometryUpdateThread {
-        /**
-         * Priority level to set the DAQ thread to.
-         * This is a value between 0 and 99, with 99 indicating higher priority and 0 indicating lower priority.
-         */
-        protected static final int START_THREAD_PRIORITY = 1; // Testing shows 1 (minimum realtime) is sufficient for tighter
-                                                            // odometry loops.
-                                                            // If the odometry period is far away from the desired frequency,
-                                                            // increasing this may help
+    /** 
+     * Returns swerve module positions
+     * @return array of length of number of swerve modules
+     */
+    public SwerveModulePosition[] getSwervePositions(){
+        return m_positions;
+    }
 
-        protected final Thread m_thread;
-        protected volatile boolean m_running = false;
-
-        protected final BaseStatusSignal[] m_allSignals;
-
-        protected final MedianFilter peakRemover = new MedianFilter(3);
-        protected final LinearFilter lowPass = LinearFilter.movingAverage(50);
-        protected double lastTime = 0;
-        protected double currentTime = 0;
-        protected double averageLoopTime = 0;
-
-        public OdometryUpdateThread() {
-            m_thread = new Thread(this::run);
-            /* Mark this thread as a "daemon" (background) thread
-             * so it doesn't hold up program shutdown */
-            m_thread.setDaemon(true);
-
-            /* 4 signals for each module + 2 for Pigeon2 */
-            m_allSignals = new BaseStatusSignal[(MODULE_COUNT * 4) + 2];
-
-            AddModuleSignals(m_frontLeftModule, 0);
-            AddModuleSignals(m_frontRightModule, 1);
-            AddModuleSignals(m_backLeftModule, 2);
-            AddModuleSignals(m_backRightModule, 3);
-            m_allSignals[i].setUpdateFrequency(MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND)
-
-            
-        }
-
-        private void AddModuleSignals(SwerveModule module, int index){
-            var signals = PhoenixUnsafeAccess.getSwerveSignals(module); // Dirty hack part 1
-            m_allSignals[(index * 4) + 0] = signals[0];
-            m_allSignals[(index * 4) + 1] = signals[1];
-            m_allSignals[(index * 4) + 2] = signals[2];
-            m_allSignals[(index * 4) + 3] = signals[3];
-        }
-
-        /**
-         * Starts the odometry thread.
-         */
-        public void start() {
-            m_running = true;
-            m_thread.start();
-        }
-
-        /**
-         * Stops the odometry thread.
-         */
-        public void stop() {
-            stop(0);
-        }
-
-        /**
-         * Stops the odometry thread with a timeout.
-         *
-         * @param millis The time to wait in milliseconds
-         */
-        public void stop(long millis) {
-            m_running = false;
-            try {
-                m_thread.join(millis);
-            } catch (final InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        public void run() {
-            /* Make sure all signals update at the correct update frequency */
-            BaseStatusSignal.setUpdateFrequencyForAll(ODOMETRY_THREAD_HZ, m_allSignals);
-            Threads.setCurrentThreadPriority(true, START_THREAD_PRIORITY);
-
-            /* Run as fast as possible, our signals will control the timing */
-            while (m_running) {
-                /* Synchronously wait for all signals in drivetrain */
-                /* Wait up to twice the period of the update frequency */
-                StatusCode status;
-                if (USING_CAN_FD) {
-                    status = BaseStatusSignal.waitForAll(2.0 / ODOMETRY_THREAD_HZ, m_allSignals);
-                } else {
-                    /* Wait for the signals to update */
-                    Timer.delay(1.0 / ODOMETRY_THREAD_HZ);
-                    status = BaseStatusSignal.refreshAll(m_allSignals);
-                }
-
-                try {
-                    m_stateLock.writeLock().lock();
-
-                    lastTime = currentTime;
-                    currentTime = Utils.getCurrentTimeSeconds();
-                    /* We don't care about the peaks, as they correspond to GC events, and we want the period generally low passed */
-                    averageLoopTime = lowPass.calculate(peakRemover.calculate(currentTime - lastTime));
-
-
-                    /* Now update odometry */
-                    /* Keep track of the change in encoder rotations */
-                    /* Status signals have automatically already been updated, and don't need refreshing */
-                    SwerveModulePosition[] positions = new SwerveModulePosition[4];
-
-                    positions[0] = m_frontLeftModule.getPosition(false);
-                    positions[1] = m_frontRightModule.getPosition(false);
-                    positions[2] = m_backLeftModule.getPosition(false);
-                    positions[3] = m_backRightModule.getPosition(false);
-
-
-                    // Gyro latency compensation. Using a navX, so isn't all that easy, disabled for now
-                    // double yawDegrees = BaseStatusSignal.getLatencyCompensatedValue(
-                    //         m_yawGetter, m_angularVelocity);
-
-                    /* Keep track of previous and current pose to account for the carpet vector */
-                    m_odometry.update(Rotation2d.fromDegrees(RobotContainer.gyro.getYaw()), positions);
-
-                    /* And now that we've got the new odometry, update the controls */
-                    m_requestParameters.currentPose = m_odometry.getEstimatedPosition();
-                    m_requestParameters.kinematics = m_kinematics;
-                    m_requestParameters.swervePositions = positions;
-                    m_requestParameters.timestamp = currentTime;
-                    m_requestParameters.updatePeriod = 1.0 / UpdateFrequency;
-
-                    //m_requestToApply.apply(m_requestParameters, Modules);
-
-                    /* Update our cached state with the newly updated data */
-                    m_cachedState.Pose = m_odometry.getEstimatedPosition();
-                    m_cachedState.OdometryPeriod = averageLoopTime;
-
-                    if (m_cachedState.ModuleStates == null) {
-                        m_cachedState.ModuleStates = new SwerveModuleState[Modules.length];
-                    }
-                    if (m_cachedState.ModuleTargets == null) {
-                        m_cachedState.ModuleTargets = new SwerveModuleState[Modules.length];
-                    }
-                    for (int i = 0; i < Modules.length; ++i) {
-                        m_cachedState.ModuleStates[i] = Modules[i].getCurrentState();
-                        m_cachedState.ModuleTargets[i] = Modules[i].getTargetState();
-                    }
-
-                } finally {
-                    m_stateLock.writeLock().unlock();
-                }
-            }
-        }
-
-        public OdometryData getOdometryData(){
-            return m_odometryData;
-        }
-    } // end class OdometryUpdateThread
-
+    
 } // end class Drivetrain
