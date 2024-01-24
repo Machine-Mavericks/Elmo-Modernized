@@ -329,6 +329,9 @@ public class Drivetrain extends SubsystemBase {
         // not sure what this line was intended to do. KN Feb 11/2022
         // rotation *= 2.0 / Math.hypot(WHEELBASE_METERS, TRACKWIDTH_METERS);
 
+        SmartDashboard.putString("YSpeed", ((Double)translation.getY()).toString());
+        SmartDashboard.putString("TargetRot", newrotation.toString());
+        SmartDashboard.putString("CurrentY", ((Double)RobotContainer.gyro.getYaw()).toString());
         // determine chassis speeds
         if (fieldOriented) {
             m_chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(newtranslation.getX(),
