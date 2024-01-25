@@ -9,8 +9,16 @@ import java.util.HashMap;
 
 import frc.robot.Robot;
 
-/** Add your docs here. */
-public class RobotShuffleboardManager {
+/** 
+ * Helper for keeping shufflebaord code clean.
+ * Use RegisterShuffleUser() to setup parameters how often to update shuffleboard.
+ * RegisterShuffleUser() has a few overloads, namely letting you easily disable this tab while keeping all the relevant code around.
+ * As a rule of thumb to keep shuffleboard clean, try to disable any subsystems that aren't being actively debugged.
+ * Persistent shuffleboard data should be managed through shuffleboardOI.
+ * To init this class call init() with a reference to the main robot class.
+ * To make a subsystem use this class implement the ShuffleUser interface.
+ */
+public class SubsystemShuffleboardManager {
     public static ArrayList<ShuffleUser> m_shuffleUserList = new ArrayList<>();
     public static HashMap<Double, ShuffleboardUpdateRunnable> m_updateTasks = new HashMap<>();
 

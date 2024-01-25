@@ -4,7 +4,10 @@
 
 package frc.robot.util;
 
-/** Add your docs here. */
+/** 
+ * A convenient interface for using shuffleboard, supports disabling shuffleboard for the base class, or setting a custom update rate.
+ * Managed through the static RobotShuffleboardManager class
+ */
 public interface ShuffleUser {
     public void initializeShuffleboard();
     

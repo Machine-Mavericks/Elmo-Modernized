@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
-import frc.robot.util.RobotShuffleboardManager;
+import frc.robot.util.SubsystemShuffleboardManager;
 import frc.robot.util.ShuffleUser;
 
 public class SwerveOdometry extends SubsystemBase implements ShuffleUser {
@@ -55,7 +55,7 @@ public class SwerveOdometry extends SubsystemBase implements ShuffleUser {
     // // create odometry shuffleboard page
     // initializeShuffleboard();
 
-    RobotShuffleboardManager.RegisterShuffleUser(this);
+    SubsystemShuffleboardManager.RegisterShuffleUser(this);
   }
 
   // -------------------- Initialize and Update Odometry Methods
