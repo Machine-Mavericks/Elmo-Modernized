@@ -5,7 +5,7 @@
 package frc.robot.util;
 
 /** Add your docs here. */
-public interface ShuffleHelper {
+public interface ShuffleUser {
     public void initializeShuffleboard();
     
     public void updateShuffleboard();

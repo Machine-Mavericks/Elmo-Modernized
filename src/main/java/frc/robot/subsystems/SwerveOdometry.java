@@ -20,9 +20,9 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.util.RobotShuffleboardManager;
-import frc.robot.util.ShuffleHelper;
+import frc.robot.util.ShuffleUser;
 
-public class SwerveOdometry extends SubsystemBase implements ShuffleHelper {
+public class SwerveOdometry extends SubsystemBase implements ShuffleUser {
 
   // constant to convert degrees to radians
   
