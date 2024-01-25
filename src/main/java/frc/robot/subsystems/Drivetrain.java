@@ -15,7 +15,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -284,6 +283,7 @@ public class Drivetrain extends SubsystemBase {
         m_swerveModules[3] = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         
 
+        // Perform initial configuration on all swerve modules
         for (int i = 0; i < m_swerveModules.length; i++){
             SwerveModule module = m_swerveModules[i];
 
@@ -371,7 +371,7 @@ public class Drivetrain extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Ensure sensor readings are up to date
+        // Ensure sensor readings & pose estimator are up to date
         updateOdometryData();
 
         // Look ahead in time one control loop
