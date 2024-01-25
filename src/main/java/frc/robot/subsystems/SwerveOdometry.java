@@ -88,10 +88,8 @@ public class SwerveOdometry extends SubsystemBase implements ShuffleUser {
     m_odometry.resetPosition(new Rotation2d(gyroangle * DEGtoRAD), RobotContainer.drivetrain.getSwervePositions(), position);  // new Rotation2d(gyroangle * DEGtoRAD)
   }
 
-  /** Update current robot dometry - called by scheduler at 50Hz */
-  @Override
-  public void periodic() {
-
+  /* Called by the drivetrain synchronously with swerve module data updates to reduce latency */
+  public void updateOdometry(){
     // get gyro angle (in degrees) and make rotation vector
     Rotation2d gyroangle = new Rotation2d(RobotContainer.gyro.getYaw() * DEGtoRAD);
 

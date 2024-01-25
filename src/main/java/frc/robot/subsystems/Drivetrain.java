@@ -387,10 +387,15 @@ public class Drivetrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Processed Speeds", discretizedChassisSpeeds.toString());
 
+        // Prepared debugging for closed loop drive motor
         SmartDashboard.putString("FrontLeftState", m_swerveModules[0].getCurrentState().toString());
-        SmartDashboard.putString("FrontRightState", m_swerveModules[1].getCurrentState().toString());
-        SmartDashboard.putString("BackLeftState", m_swerveModules[2].getCurrentState().toString());
-        SmartDashboard.putString("BackRightState", m_swerveModules[3].getCurrentState().toString());
+        SmartDashboard.putString("FrontLeftDriveError", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopError().getValue()));
+        SmartDashboard.putString("FrontLeftDriveEncoder", String.valueOf(m_swerveModules[0].getDriveMotor().getVelocity().getValue()));
+        SmartDashboard.putString("FrontLeftTargetState", m_swerveModules[0].getTargetState().toString());
+
+        // SmartDashboard.putString("FrontRightState", m_swerveModules[1].getCurrentState().toString());
+        // SmartDashboard.putString("BackLeftState", m_swerveModules[2].getCurrentState().toString());
+        // SmartDashboard.putString("BackRightState", m_swerveModules[3].getCurrentState().toString());
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
@@ -407,11 +412,15 @@ public class Drivetrain extends SubsystemBase {
         // Refresh odometry data
         BaseStatusSignal.refreshAll(m_allSignals);
 
+        // Update / fill swerve related data
         for (int i = 0; i < m_swerveModules.length; i++){
             m_positions[i] = m_swerveModules[i].getPosition(false);
             m_states[i] = m_swerveModules[i].getCurrentState();
             m_targetStates[i] = m_swerveModules[i].getTargetState();
         }
+
+        // Update pose estimator with odometry data
+        RobotContainer.odometry.updateOdometry();
     }
 
     // -------------------- Kinematics and Swerve Module Status Public Access Methods --------------------

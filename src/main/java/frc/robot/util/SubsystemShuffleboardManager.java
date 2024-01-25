@@ -25,6 +25,7 @@ public class SubsystemShuffleboardManager {
     private static Robot m_robot;
     private static boolean m_setupComplete = false;
 
+    // Equal to the default periodic update rate
     private static final double DefaultUpdatesPerSecond = 20;
 
     private static class ShuffleboardUpdateRunnable implements Runnable{
