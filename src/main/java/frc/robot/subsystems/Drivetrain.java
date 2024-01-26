@@ -63,8 +63,8 @@ public class Drivetrain extends SubsystemBase {
         .withKS(0).withKV(1).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
-        .withKP(0.4).withKI(0).withKD(0) // TODO: Tune this value
-        .withKS(0).withKV(0).withKA(0);
+        .withKP(0.1).withKI(0).withKD(0) // TODO: Tune this value
+        .withKV(0.11);
 
 
         /** Only option is Voltage without pro liscence */ 
@@ -74,7 +74,7 @@ public class Drivetrain extends SubsystemBase {
 
         public static final double SpeedAt12VoltsMps = MAX_VELOCITY_METERS_PER_SECOND; 
 
-        /** True if the steering motor is reversed from the CANcoder */
+        /** True if the driving motor is reversed */
         public static final boolean DriveMotorInverted = MK4_L1_DriveInverted;
 
 
@@ -116,7 +116,7 @@ public class Drivetrain extends SubsystemBase {
     public static final double MK4_L1_SteerReduction = (15.0 / 32.0) * (10.0 / 60.0);
     public static final double MK4_L1_WheelDiameter = 0.10033;
 
-    public static final boolean MK4_L1_DriveInverted = true;
+    public static final boolean MK4_L1_DriveInverted = false;
     public static final boolean MK4_L1_SteerInverted = false;
      
 
@@ -206,7 +206,7 @@ public class Drivetrain extends SubsystemBase {
 
         tab = Shuffleboard.getTab("Drivetrain");
 
-        resetModules(NeutralModeValue.Brake);
+        resetModules(NeutralModeValue.Coast);
 
         /**Acceleration Limiting Slider*/
         maxAccel = tab.addPersistent("Max Acceleration", 0.05)
@@ -219,7 +219,7 @@ public class Drivetrain extends SubsystemBase {
         .withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(Map.of("min", 0, "max", 0.75))
         .getEntry();
-        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Brake);}))
+        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Coast);}))
         .withPosition(0,0)
         .withSize(2, 1);
     }
@@ -390,7 +390,8 @@ public class Drivetrain extends SubsystemBase {
         // Prepared debugging for closed loop drive motor
         SmartDashboard.putString("FrontLeftState", m_swerveModules[0].getCurrentState().toString());
         SmartDashboard.putString("FrontLeftDriveError", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopError().getValue()));
-        SmartDashboard.putString("FrontLeftDriveEncoder", String.valueOf(m_swerveModules[0].getDriveMotor().getVelocity().getValue()));
+        SmartDashboard.putString("FrontLeftDriveTarget", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopReference().getValue()));
+        SmartDashboard.putString("FrontLeftDriveCurrent", String.valueOf(m_swerveModules[0].getDriveMotor().getVelocity().getValue()));
         SmartDashboard.putString("FrontLeftTargetState", m_swerveModules[0].getTargetState().toString());
 
         // SmartDashboard.putString("FrontRightState", m_swerveModules[1].getCurrentState().toString());
@@ -399,7 +400,7 @@ public class Drivetrain extends SubsystemBase {
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
-        DriveRequestType driveRequestType = DriveRequestType.OpenLoopVoltage;
+        DriveRequestType driveRequestType = DriveRequestType.Velocity;
 
 
         // Steer request type defaults correctly to MotionMagic
