@@ -16,15 +16,15 @@ public class ApproachBall extends Command {
   private Drivetrain m_drivetrain = RobotContainer.drivetrain;
   private Gyro m_gyro = RobotContainer.gyro;
 
-// get angle to target
-double TargetAngle = 0;
+  // get angle to target
+  double TargetAngle = 0;
 
-   // TODO: set gains
-   double kp = 0.0125;
-   double ki = 0.0;
-   double kd = 0.0; //0.00015;
+  // TODO: set gains
+  double kp = 0.0125;
+  double ki = 0.0;
+  double kd = 0.0; //0.00015;
  
-   PIDController pidController = new PIDController(kp, ki, kd);
+  PIDController pidController = new PIDController(kp, ki, kd);
   
   
   public ApproachBall() {
@@ -45,28 +45,26 @@ double TargetAngle = 0;
     double angle = 0.0;
     double speed = 0.0;
 
-// do we have a valid target?
-if ((RobotContainer.ballTargeting.IsBall())){
+    // do we have a valid target?
+    if ((RobotContainer.ballTargeting.IsBall())){
+      TargetAngle = RobotContainer.ballTargeting.getTargetHorAngle();
+        
+      // determine angle correction - uses PI controller
+      angle = pidController.calculate(TargetAngle+5.0);
+      if (angle > 1.0)
+        angle = 1.0;
+      if (angle < -1.0)
+        angle = -1.0;
 
-  
-  TargetAngle = RobotContainer.ballTargeting.getTargetHorAngle();
-    
-  // determine angle correction - uses PI controller
-  angle = pidController.calculate(TargetAngle+5.0);
-  if (angle > 1.0)
-    angle = 1.0;
-  if (angle < -1.0)
-    angle = -1.0;
+      if (m_gyro.getYaw() > -80)
+        speed = 0.2;
+      else
+        speed = 0.2 + 0.10*(-90 - m_gyro.getYaw())/10.0;
 
-  if (m_gyro.getYaw() >-80)
-    speed = 0.2;
-  else
-    speed = 0.2 + 0.10*(-90 - m_gyro.getYaw())/10.0;
+      if (speed < 0.0)
+        speed = 0.0;
 
-if (speed < 0.0)
-  speed = 0.0;
-
-  }   // end if we have a valid target
+    }   // end if we have a valid target
 
 
     RobotContainer.drivetrain.drive(

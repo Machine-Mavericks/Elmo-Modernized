@@ -27,23 +27,23 @@ public class Utils {
      * Jared's implementation: https://www.chiefdelphi.com/t/whitepaper-swerve-drive-skew-and-second-order-kinematics/416964/33
      * Differs slightly to WPILib's implementation
     */
-    public static Twist2d log(final Pose2d transform) 
-    {
-        final double dtheta = transform.getRotation().getRadians();
-        final double half_dtheta = 0.5 * dtheta;
-        final double cos_minus_one = Math.cos(transform.getRotation().getRadians()) - 1.0;
-        double halftheta_by_tan_of_halfdtheta;
-        if (Math.abs(cos_minus_one) < 1E-9) {
-        halftheta_by_tan_of_halfdtheta = 1.0 - 1.0 / 12.0 * dtheta * dtheta;
-        } else {
-        halftheta_by_tan_of_halfdtheta =
-            -(half_dtheta * Math.sin(transform.getRotation().getRadians())) / cos_minus_one;
-        }
-        final Translation2d translation_part =
-            transform
-                .getTranslation()
-                .rotateBy(new Rotation2d(halftheta_by_tan_of_halfdtheta, -half_dtheta));
-                // notice a lack of .times(...); here.
-        return new Twist2d(translation_part.getX(), translation_part.getY(), dtheta);
-    }
+    // public static Twist2d log(final Pose2d transform) 
+    // {
+    //     final double dtheta = transform.getRotation().getRadians();
+    //     final double half_dtheta = 0.5 * dtheta;
+    //     final double cos_minus_one = Math.cos(transform.getRotation().getRadians()) - 1.0;
+    //     double halftheta_by_tan_of_halfdtheta;
+    //     if (Math.abs(cos_minus_one) < 1E-9) {
+    //     halftheta_by_tan_of_halfdtheta = 1.0 - 1.0 / 12.0 * dtheta * dtheta;
+    //     } else {
+    //     halftheta_by_tan_of_halfdtheta =
+    //         -(half_dtheta * Math.sin(transform.getRotation().getRadians())) / cos_minus_one;
+    //     }
+    //     final Translation2d translation_part =
+    //         transform
+    //             .getTranslation()
+    //             .rotateBy(new Rotation2d(halftheta_by_tan_of_halfdtheta, -half_dtheta));
+    //             // notice a lack of .times(...); here.
+    //     return new Twist2d(translation_part.getX(), translation_part.getY(), dtheta);
+    // }
 }
