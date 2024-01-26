@@ -1,5 +1,10 @@
 package frc.robot.util;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
+
 public class Utils {
     
     /**
@@ -10,9 +15,35 @@ public class Utils {
      * @return Smallest difference between angles, in degrees
      * @apiNote This works by noticing that we want to take the difference between the two angles, angle1 and angle2 and wrap that result to the range [-180, 179). The mod operator allows us to wrap something to the range [0, n). I.e. x % n "wraps" (with a caveat for x < 0) x to the range [0, n).Our range starts at -180 rather than 0, so we shift it over by adding 180. Then we wrap to 360, then we shift back. That's what the first line of the method does.The second line takes care of that little wrinkle with negative numbers. If angle2 - angle1 + 180 happened to be less than 0, then diff will be less than -180. In that case we just wrap it back into range by adding 360 to it. Otherwise we do nothing.As an added bonus, the input angles are completely unconstrained. They need not be between -360 and 360. They can be anything.
      */
-     public static double AngleDifference( double angle1, double angle2 )
+    public static double AngleDifference( double angle1, double angle2 )
     {
         double diff = ( angle2 - angle1 + 180 ) % 360 - 180;
         return diff < -180 ? diff + 360 : diff;
+    }
+
+
+    /**
+     * Generates a twist between two points
+     * Jared's implementation: https://www.chiefdelphi.com/t/whitepaper-swerve-drive-skew-and-second-order-kinematics/416964/33
+     * Differs slightly to WPILib's implementation
+    */
+    public static Twist2d log(final Pose2d transform) 
+    {
+        final double dtheta = transform.getRotation().getRadians();
+        final double half_dtheta = 0.5 * dtheta;
+        final double cos_minus_one = Math.cos(transform.getRotation().getRadians()) - 1.0;
+        double halftheta_by_tan_of_halfdtheta;
+        if (Math.abs(cos_minus_one) < 1E-9) {
+        halftheta_by_tan_of_halfdtheta = 1.0 - 1.0 / 12.0 * dtheta * dtheta;
+        } else {
+        halftheta_by_tan_of_halfdtheta =
+            -(half_dtheta * Math.sin(transform.getRotation().getRadians())) / cos_minus_one;
+        }
+        final Translation2d translation_part =
+            transform
+                .getTranslation()
+                .rotateBy(new Rotation2d(halftheta_by_tan_of_halfdtheta, -half_dtheta));
+                // notice a lack of .times(...); here.
+        return new Twist2d(translation_part.getX(), translation_part.getY(), dtheta);
     }
 }

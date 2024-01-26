@@ -13,8 +13,10 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -29,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.RobotMap;
+import frc.robot.util.Utils;
 
 
 /**
@@ -380,8 +383,8 @@ public class Drivetrain extends SubsystemBase {
         // Twist2d velocity_twist2d = new Pose2d().log(robotDeltaPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
         // ChassisSpeeds discretizedChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
         
-        /* Above can be replaced with new WPILib call to discretize speeds */
-        ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
+        // Jared's implementation
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt);
 
         SwerveModuleState[] targetStates = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
@@ -407,6 +410,13 @@ public class Drivetrain extends SubsystemBase {
         for (int i = 0; i < m_swerveModules.length; i++){
             m_swerveModules[i].apply(targetStates[i], driveRequestType); 
         }     
+    }
+
+    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt){
+        Pose2d robotDeltaPose = new Pose2d(speeds.vxMetersPerSecond * dt, speeds.vyMetersPerSecond * dt, Rotation2d.fromRadians(speeds.omegaRadiansPerSecond * dt));
+        // Black magic
+        Twist2d velocity_twist2d = Utils.log(robotDeltaPose); // Twist between two poses. I still don't know calculus, so understanding this is a bit of a problem...
+        return new ChassisSpeeds(velocity_twist2d.dx / dt, velocity_twist2d.dy / dt, velocity_twist2d.dtheta / dt);
     }
 
     public void updateOdometryData(){
