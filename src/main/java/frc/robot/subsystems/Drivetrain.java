@@ -151,6 +151,9 @@ public class Drivetrain extends SubsystemBase {
 
 
 
+    // Whether motors should try to brake
+    public static final NeutralModeValue NEUTRAL_MODE = NeutralModeValue.Brake;
+
     // -------------------- Swerve Module Data Arrays --------------------
     
     /*
@@ -209,7 +212,7 @@ public class Drivetrain extends SubsystemBase {
 
         tab = Shuffleboard.getTab("Drivetrain");
 
-        resetModules(NeutralModeValue.Coast);
+        resetModules(NEUTRAL_MODE);
 
         /**Acceleration Limiting Slider*/
         maxAccel = tab.addPersistent("Max Acceleration", 0.05)
@@ -222,7 +225,7 @@ public class Drivetrain extends SubsystemBase {
         .withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(Map.of("min", 0, "max", 0.75))
         .getEntry();
-        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NeutralModeValue.Coast);}))
+        tab.add("Reset Drivetrain", new InstantCommand(()->{resetModules(NEUTRAL_MODE);}))
         .withPosition(0,0)
         .withSize(2, 1);
     }
@@ -377,14 +380,13 @@ public class Drivetrain extends SubsystemBase {
         // Ensure sensor readings & pose estimator are up to date
         updateOdometryData();
 
-        // Look ahead in time one control loop
-        // Pose2d robotDeltaPose = new Pose2d(m_chassisSpeeds.vxMetersPerSecond * updateDt, m_chassisSpeeds.vyMetersPerSecond * updateDt, Rotation2d.fromRadians(m_chassisSpeeds.omegaRadiansPerSecond * updateDt));
-        // // Black magic
-        // Twist2d velocity_twist2d = new Pose2d().log(robotDeltaPose); // Twist between two poses .log is relative to zeroed pose. I still don't know calculus, so understanding this is a bit of a problem...
-        // ChassisSpeeds discretizedChassisSpeeds = new ChassisSpeeds(velocity_twist2d.dx / updateDt, velocity_twist2d.dy / updateDt, velocity_twist2d.dtheta / updateDt);
+        // Look ahead in time one control loop and adjust
         
-        // Jared's implementation
-        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt);
+        // 4738's implementation. With fudge factor to account for latency
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 4);
+
+        // WPILib's implementation
+        //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(discretizedChassisSpeeds, updateDt);
 
         SwerveModuleState[] targetStates = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
@@ -397,10 +399,6 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putString("FrontLeftDriveCurrent", String.valueOf(m_swerveModules[0].getDriveMotor().getVelocity().getValue()));
         SmartDashboard.putString("FrontLeftTargetState", m_swerveModules[0].getTargetState().toString());
 
-        // SmartDashboard.putString("FrontRightState", m_swerveModules[1].getCurrentState().toString());
-        // SmartDashboard.putString("BackLeftState", m_swerveModules[2].getCurrentState().toString());
-        // SmartDashboard.putString("BackRightState", m_swerveModules[3].getCurrentState().toString());
-
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
         DriveRequestType driveRequestType = DriveRequestType.Velocity;
@@ -412,11 +410,16 @@ public class Drivetrain extends SubsystemBase {
         }     
     }
 
-    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt){
-        Pose2d robotDeltaPose = new Pose2d(speeds.vxMetersPerSecond * dt, speeds.vyMetersPerSecond * dt, Rotation2d.fromRadians(speeds.omegaRadiansPerSecond * dt));
-        // Black magic
-        Twist2d velocity_twist2d = Utils.log(robotDeltaPose); // Twist between two poses. I still don't know calculus, so understanding this is a bit of a problem...
-        return new ChassisSpeeds(velocity_twist2d.dx / dt, velocity_twist2d.dy / dt, velocity_twist2d.dtheta / dt);
+    // Fudge compensation for angle included, other teams have had success with a factor of 4
+    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt, double rotationCompFactor){ 
+        var desiredDeltaPose = new Pose2d(
+            speeds.vxMetersPerSecond * dt, 
+            speeds.vyMetersPerSecond * dt, 
+            new Rotation2d(speeds.omegaRadiansPerSecond * dt * rotationCompFactor)
+        );
+        var twist = new Pose2d().log(desiredDeltaPose);
+
+        return new ChassisSpeeds((twist.dx / dt), (twist.dy / dt), (speeds.omegaRadiansPerSecond));
     }
 
     public void updateOdometryData(){
