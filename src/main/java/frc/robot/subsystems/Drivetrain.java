@@ -119,7 +119,7 @@ public class Drivetrain extends SubsystemBase {
     public static final double MK4_L1_SteerReduction = (15.0 / 32.0) * (10.0 / 60.0);
     public static final double MK4_L1_WheelDiameter = 0.10033;
 
-    public static final boolean MK4_L1_DriveInverted = false;
+    public static final boolean MK4_L1_DriveInverted = true;
     public static final boolean MK4_L1_SteerInverted = false;
      
 
@@ -359,7 +359,7 @@ public class Drivetrain extends SubsystemBase {
         // flip sign of y axis speed
         // flip sign of rotation speed
         Translation2d newtranslation = new Translation2d(translation.getX(),
-                -translation.getY());
+                translation.getY());
         Double newrotation = -rotation;
 
         // determine chassis speeds
@@ -383,13 +383,14 @@ public class Drivetrain extends SubsystemBase {
         // Look ahead in time one control loop and adjust
         
         // 4738's implementation. With fudge factor to account for latency
-        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 4);
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt);
 
         // WPILib's implementation
-        //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(discretizedChassisSpeeds, updateDt);
+        //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
 
         SwerveModuleState[] targetStates = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
+        SmartDashboard.putString("Unprocessed Speeds", m_chassisSpeeds.toString());
         SmartDashboard.putString("Processed Speeds", discretizedChassisSpeeds.toString());
 
         // Prepared debugging for closed loop drive motor
@@ -401,7 +402,7 @@ public class Drivetrain extends SubsystemBase {
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
-        DriveRequestType driveRequestType = DriveRequestType.Velocity;
+        DriveRequestType driveRequestType = DriveRequestType.OpenLoopVoltage;
 
 
         // Steer request type defaults correctly to MotionMagic
@@ -411,14 +412,26 @@ public class Drivetrain extends SubsystemBase {
     }
 
     // Fudge compensation for angle included, other teams have had success with a factor of 4
-    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt, double rotationCompFactor){ 
-        var desiredDeltaPose = new Pose2d(
+    // public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt, double rotationCompFactor){ 
+    //     var desiredDeltaPose = new Pose2d(
+    //         speeds.vxMetersPerSecond * dt, 
+    //         speeds.vyMetersPerSecond * dt, 
+    //         new Rotation2d(speeds.omegaRadiansPerSecond * dt * rotationCompFactor)
+    //     );
+    //     var twist = new Pose2d().log(desiredDeltaPose);
+
+    //     return new ChassisSpeeds((twist.dx / dt), (twist.dy / dt), (speeds.omegaRadiansPerSecond));
+    // }
+
+    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt){ 
+        var futureRobotPose = new Pose2d(
             speeds.vxMetersPerSecond * dt, 
             speeds.vyMetersPerSecond * dt, 
-            new Rotation2d(speeds.omegaRadiansPerSecond * dt * rotationCompFactor)
+            new Rotation2d(speeds.omegaRadiansPerSecond * dt * -20)
         );
-        var twist = new Pose2d().log(desiredDeltaPose);
-
+        var twist = Utils.log(futureRobotPose);
+        SmartDashboard.putString("Twist Speeds", twist.toString());
+        // FLIPPED COORDINATE SYSTEM
         return new ChassisSpeeds((twist.dx / dt), (twist.dy / dt), (speeds.omegaRadiansPerSecond));
     }
 
