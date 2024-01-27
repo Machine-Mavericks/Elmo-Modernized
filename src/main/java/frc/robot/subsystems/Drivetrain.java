@@ -383,7 +383,7 @@ public class Drivetrain extends SubsystemBase {
         // Look ahead in time one control loop and adjust
         
         // 4738's implementation. With fudge factor to account for latency
-        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt);
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 20);
 
         // WPILib's implementation
         //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
@@ -411,27 +411,14 @@ public class Drivetrain extends SubsystemBase {
         }     
     }
 
-    // Fudge compensation for angle included, other teams have had success with a factor of 4
-    // public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt, double rotationCompFactor){ 
-    //     var desiredDeltaPose = new Pose2d(
-    //         speeds.vxMetersPerSecond * dt, 
-    //         speeds.vyMetersPerSecond * dt, 
-    //         new Rotation2d(speeds.omegaRadiansPerSecond * dt * rotationCompFactor)
-    //     );
-    //     var twist = new Pose2d().log(desiredDeltaPose);
-
-    //     return new ChassisSpeeds((twist.dx / dt), (twist.dy / dt), (speeds.omegaRadiansPerSecond));
-    // }
-
-    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt){ 
+    public static ChassisSpeeds DiscretizeChassisSpeeds(ChassisSpeeds speeds, double dt, double rotationCompFactor){ 
         var futureRobotPose = new Pose2d(
             speeds.vxMetersPerSecond * dt, 
             speeds.vyMetersPerSecond * dt, 
-            new Rotation2d(speeds.omegaRadiansPerSecond * dt * -20)
+            new Rotation2d(speeds.omegaRadiansPerSecond * dt * -rotationCompFactor) // No I do not know why it's negative
         );
         var twist = Utils.log(futureRobotPose);
-        SmartDashboard.putString("Twist Speeds", twist.toString());
-        // FLIPPED COORDINATE SYSTEM
+        // FLIPPED COORDINATE SYSTEM??
         return new ChassisSpeeds((twist.dx / dt), (twist.dy / dt), (speeds.omegaRadiansPerSecond));
     }
 

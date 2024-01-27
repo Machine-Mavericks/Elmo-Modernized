@@ -27,6 +27,7 @@ public class SubsystemShuffleboardManager {
 
     // Equal to the default periodic update rate
     private static final double DefaultUpdatesPerSecond = 20;
+    private static final double DefaultUpdateOffsetSeconds = 0.01;
 
     private static class ShuffleboardUpdateRunnable implements Runnable{
         ArrayList<ShuffleUser> updateList = new ArrayList<>();
@@ -82,7 +83,7 @@ public class SubsystemShuffleboardManager {
         }else{
             runnable = new ShuffleboardUpdateRunnable();
             m_updateTasks.put(updatesPerSecond, runnable);
-            m_robot.addPeriodic(runnable, 1 / updatesPerSecond);
+            m_robot.addPeriodic(runnable, 1 / updatesPerSecond, DefaultUpdateOffsetSeconds);
         }
         runnable.addUser(shuffleUser);
     }

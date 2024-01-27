@@ -36,6 +36,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    getPeriod();
     RobotMap.Init();
     SubsystemShuffleboardManager.init(this);
     // Initialise our RobotContainer. This will perform all our button bindings, and

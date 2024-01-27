@@ -32,17 +32,15 @@ public class Utils {
         final double dtheta = transform.getRotation().getRadians();
         final double half_dtheta = 0.5 * dtheta;
         final double cos_minus_one = Math.cos(transform.getRotation().getRadians()) - 1.0;
-        //System.out.println("Cos-1: " + cos_minus_one + " RotRad: " + transform.getRotation().getRadians());
+
         double halftheta_by_tan_of_halfdtheta;
         if (Math.abs(cos_minus_one) < 0.000001) {
             halftheta_by_tan_of_halfdtheta = 1.0 - 1.0 / 12.0 * dtheta * dtheta;
-            //System.out.println("WHYY");
         } else {
         halftheta_by_tan_of_halfdtheta =
             -(half_dtheta * Math.sin(transform.getRotation().getRadians())) / cos_minus_one;
         }
 
-        System.out.println(new Rotation2d(halftheta_by_tan_of_halfdtheta, -half_dtheta).toString());
         final Translation2d translation_part =
             transform
                 .getTranslation()
