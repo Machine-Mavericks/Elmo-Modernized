@@ -11,6 +11,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstantsFactory;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -55,8 +56,8 @@ public class Drivetrain extends SubsystemBase {
         public static final double WheelDiameter = Units.metersToInches(MK4_L1_WheelDiameter);
         /** The maximum amount of current the drive motors can apply without slippage */
         public static final double SlipCurrent = 400;
-
-
+        /** Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns */
+        public static final double CouplingRatio = 3.5;
         // TODO: Figure out actual PID values to use. These were stolen from 
         // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/Robot.java
 
@@ -121,7 +122,8 @@ public class Drivetrain extends SubsystemBase {
 
     public static final boolean MK4_L1_DriveInverted = true;
     public static final boolean MK4_L1_SteerInverted = false;
-     
+    
+    public static final double DRIVE_DEADBAND_PERCENT = 0.1;
 
     // The formula for calculating the theoretical maximum velocity is:
     // <Motor free speed RPM> / 60 * <Drive reduction> * <Wheel diameter meters> *
@@ -313,7 +315,8 @@ public class Drivetrain extends SubsystemBase {
         m_allSignals[(index * 4) + 3] = signals[3];
     }
 
-    // It seems there is already a factory for SwerveModuleConstants
+    
+    // It seems there is already a factory for SwerveModuleConstants. Oh well!
     public static SwerveModuleConstants CreateSwerveModuleConstants(
         int steerId,
         int driveId,
@@ -340,7 +343,8 @@ public class Drivetrain extends SubsystemBase {
         .withDriveMotorClosedLoopOutput(FormattedSwerveModuleSettings.DriveClosedLoopOutput)
         .withSpeedAt12VoltsMps(FormattedSwerveModuleSettings.SpeedAt12VoltsMps)
         .withSteerMotorInverted(FormattedSwerveModuleSettings.SteerMotorInverted)
-        .withDriveMotorInverted(FormattedSwerveModuleSettings.DriveMotorInverted);
+        .withDriveMotorInverted(FormattedSwerveModuleSettings.DriveMotorInverted)
+        .withCouplingGearRatio(FormattedSwerveModuleSettings.CouplingRatio);
 
         return constants;
     }
@@ -380,13 +384,26 @@ public class Drivetrain extends SubsystemBase {
         // Ensure sensor readings & pose estimator are up to date
         updateOdometryData();
 
+
         // Look ahead in time one control loop and adjust
         
         // 4738's implementation. With fudge factor to account for latency
-        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 20);
-
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 4);
         // WPILib's implementation
         //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
+
+
+        // Deadband robot relative speeds
+        if (Math.abs(discretizedChassisSpeeds.vxMetersPerSecond) < (DRIVE_DEADBAND_PERCENT * MAX_VELOCITY_METERS_PER_SECOND)) {
+            discretizedChassisSpeeds.vxMetersPerSecond = 0;
+        }
+        if (Math.abs(discretizedChassisSpeeds.vyMetersPerSecond) < (DRIVE_DEADBAND_PERCENT * MAX_VELOCITY_METERS_PER_SECOND)) {
+            discretizedChassisSpeeds.vyMetersPerSecond = 0;
+        }
+        if (Math.abs(discretizedChassisSpeeds.omegaRadiansPerSecond) < (DRIVE_DEADBAND_PERCENT * MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND)) {
+            discretizedChassisSpeeds.omegaRadiansPerSecond = 0;
+        }
+
 
         SwerveModuleState[] targetStates = m_kinematics.toSwerveModuleStates(discretizedChassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(targetStates, MAX_VELOCITY_METERS_PER_SECOND);
@@ -395,10 +412,13 @@ public class Drivetrain extends SubsystemBase {
 
         // Prepared debugging for closed loop drive motor
         SmartDashboard.putString("FrontLeftState", m_swerveModules[0].getCurrentState().toString());
-        SmartDashboard.putString("FrontLeftDriveError", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopError().getValue()));
+        //SmartDashboard.putString("FrontLeftDriveError", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopError().getValue()));
         SmartDashboard.putString("FrontLeftDriveTarget", String.valueOf(m_swerveModules[0].getDriveMotor().getClosedLoopReference().getValue()));
         SmartDashboard.putString("FrontLeftDriveCurrent", String.valueOf(m_swerveModules[0].getDriveMotor().getVelocity().getValue()));
         SmartDashboard.putString("FrontLeftTargetState", m_swerveModules[0].getTargetState().toString());
+        SmartDashboard.putString("DrivePosSignalLatency", String.valueOf(m_swerveModules[0].getDriveMotor().getPosition().getTimestamp().getLatency())
+            + " Non comp value: " + m_swerveModules[0].getDriveMotor().getPosition().getValueAsDouble());
+        SmartDashboard.putString("SteerPosSignalLatency", String.valueOf(m_swerveModules[0].getSteerMotor().getPosition().getTimestamp().getLatency()));
 
         // TODO: OpenLoopVoltage seems to match SDS library best, but is open loop
         // For auto consistency we should aim for closed loop control
