@@ -34,6 +34,11 @@ import frc.robot.RobotContainer;
 import frc.robot.RobotMap;
 import frc.robot.util.Utils;
 
+// TODO LIST:
+// [-] Tune coupling ratio as described here https://pro.docs.ctr-electronics.com/en/stable/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
+// [-] Investigate CAN signal latency, as well as possible erroneous lack of compensation in the gyro
+// [-] Get a constants file
+// [-] Un break / tune closed loop driving
 
 /**
  * Subsystem representing the swerve drivetrain
