@@ -61,7 +61,7 @@ public class Drivetrain extends SubsystemBase {
         public static final double WheelDiameter = Units.metersToInches(MK4_L1_WheelDiameter);
         /** The maximum amount of current the drive motors can apply without slippage */
         public static final double SlipCurrent = 400;
-        /** Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns */
+        /** Every 1 rotation of the azimuth results in CouplingRatio drive motor turns */
         public static final double CouplingRatio = 3.5;
         // TODO: Figure out actual PID values to use. These were stolen from 
         // https://github.com/CrossTheRoadElec/SwerveDriveExample/blob/main/src/main/java/frc/robot/Robot.java
@@ -321,7 +321,7 @@ public class Drivetrain extends SubsystemBase {
     }
 
     
-    // It seems there is already a factory for SwerveModuleConstants. Oh well!
+    // It seems there was already a factory for SwerveModuleConstants. Oh well!
     public static SwerveModuleConstants CreateSwerveModuleConstants(
         int steerId,
         int driveId,
@@ -364,9 +364,9 @@ public class Drivetrain extends SubsystemBase {
     public void drive(Translation2d translation, double rotation, boolean fieldOriented) {
 
         // correct axes of drive - determined from field testing
-        // Feb 10 2022
-        // flip sign of y axis speed
+        // 2024 - Elmo
         // flip sign of rotation speed
+        // Allows easy flipping of drive axes if needed
         Translation2d newtranslation = new Translation2d(translation.getX(),
                 translation.getY());
         Double newrotation = -rotation;

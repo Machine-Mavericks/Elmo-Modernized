@@ -57,7 +57,7 @@ public class SubsystemShuffleboardManager {
 
     public static void RegisterShuffleUser(ShuffleUser shuffleUser, boolean enabled, double updatesPerSecond){
         if (!m_setupComplete) {
-            System.out.println("Shuffleboard Manager not setup yet, setup must be called first in robot initialization");
+            System.out.println("Shuffleboard Manager not setup yet, init must be called first in robot initialization");
             return;
         }
 
