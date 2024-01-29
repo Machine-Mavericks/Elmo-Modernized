@@ -52,10 +52,10 @@ public class RobotMap {
     }
 
     public static class VISION_TARGETING {
-    /** minimum area for finding ball */
-    public static final double MIN_BALL_DETECTION_AREA = 0.0;
-    /** minimum horizontal length of ball */
-    public static final double MIN_BALL_VERT_SIZE = 0.0;
+        /** minimum area for finding ball */
+        public static final double MIN_BALL_DETECTION_AREA = 0.0;
+        /** minimum horizontal length of ball */
+        public static final double MIN_BALL_VERT_SIZE = 0.0;
     }
     
     public static final int LIFTER_LIMIT_ID = 21;
@@ -63,8 +63,7 @@ public class RobotMap {
 
     public static final double BALL_LIFTER_SPEED = -3161;
 
-    public static class PneumaticsChannel {
-    }
+    public static class PneumaticsChannel { }
 
     public static class PWMPorts {
         /** PWM Port for led strip */

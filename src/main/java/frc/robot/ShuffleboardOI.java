@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.BuildConstants;
+import frc.robot.data.BuildConstants;
 
 
 /** Contains shuffleboard setup for generic main page not belonging to any subsubsystem

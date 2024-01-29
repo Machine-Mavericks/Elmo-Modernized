@@ -44,7 +44,7 @@ import frc.robot.util.Utils;
  * Subsystem representing the swerve drivetrain
  */
 public class Drivetrain extends SubsystemBase {
-    public static final double updateDt = 0.02;
+    
     
     //Useful reference: https://pro.docs.ctr-electronics.com/en/latest/docs/api-reference/mechanisms/swerve/swerve-builder-api.html
     
@@ -393,7 +393,7 @@ public class Drivetrain extends SubsystemBase {
         // Look ahead in time one control loop and adjust
         
         // 4738's implementation. With fudge factor to account for latency
-        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, updateDt, 4);
+        ChassisSpeeds discretizedChassisSpeeds = DiscretizeChassisSpeeds(m_chassisSpeeds, RobotContainer.updateDt, 4);
         // WPILib's implementation
         //ChassisSpeeds discretizedChassisSpeeds = ChassisSpeeds.discretize(m_chassisSpeeds, updateDt);
 

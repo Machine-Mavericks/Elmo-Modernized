@@ -1,4 +1,4 @@
-package frc.robot;
+package frc.robot.data;
 
 /** Contains pre-defined paths for path following */
 public class TrajectoryConstants {
