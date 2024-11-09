@@ -127,9 +127,9 @@ public class Robot extends TimedRobot {
     //}
    
    
-    RobotContainer.m_shooter.setShooterSpeed(0);
-    RobotContainer.m_shooter.setTopShooterSpeed(0);
-
+    RobotContainer.m_shooter.setShooterSpeed(-3000);
+    RobotContainer.m_shooter.setTopShooterSpeed(3000);
+    RobotContainer.m_shooter.setShooterAngle(1);
     // This makes sure that the autonomous stops running when
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove

@@ -51,7 +51,7 @@ public class HubTargeting extends SubsystemBase {
   public void periodic() {
     // update shuffleboard
     if (isTargetPresent()) {
-      RobotContainer.m_shooter.setShooterAngle(GetTargetHoodSetting());
+      //RobotContainer.m_shooter.setShooterAngle(GetTargetHoodSetting());
       // RobotContainer.m_shooter.setShooterSpeed(RobotContainer.hubTargeting.GetTargetRPM());
       // RobotContainer.m_shooter.setTopShooterSpeed(RobotContainer.hubTargeting.GetTopTargetRPM());
     }

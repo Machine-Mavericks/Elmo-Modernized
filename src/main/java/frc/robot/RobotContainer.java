@@ -14,6 +14,7 @@ import frc.robot.commands.ClimbCommand;
 import frc.robot.commands.ClimbGroup;
 import frc.robot.commands.DriveCommand;
 import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.IntakeOverride;
 import frc.robot.commands.LEDCommand;
 import frc.robot.commands.ReleaseBall;
 import frc.robot.commands.ShotEvaluationCommand;
@@ -94,8 +95,10 @@ public class RobotContainer {
 
     // TODO: Disable binding for competition use
     OI.zeroButton.whileTrue(new RunCommand(() -> gyro.resetGyro()));
-    OI.intakeButton.whileTrue(new IntakeCommand());
-    OI.ballTrackingButton.whileTrue(new SteerTowardsBall(false, 20.0));
+    OI.intakeButton.whileTrue(new IntakeOverride());
+
+    // Disabled because this makes the shooter unhappy?
+    //OI.ballTrackingButton.whileTrue(new SteerTowardsBall(false, 20.0));
 
     OI.overshootButton.whileTrue(new ShotEvaluationCommand(ShotEvaluationCommand.ShotType.Overshoot));
     OI.undershootButton.whileTrue(new ShotEvaluationCommand(ShotEvaluationCommand.ShotType.Undershoot));

@@ -147,6 +147,10 @@ public class Shooter extends SubsystemBase {
 
     // New API expects rotations per second (at least it's not ticks)
     rightShooterFalcon.setControl(m_velocityControl.withSlot(0).withVelocity(shooterSpeed / 60));
+    System.out.println("AAAAAAAAAAAAAAAAAAAA");
+    for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+      System.out.println(e.getClassName() + "." + e.getMethodName() + ": " + e.getLineNumber());
+    }
   }
 
   /** This method will return motor speed (rpm)*/
@@ -184,7 +188,7 @@ public class Shooter extends SubsystemBase {
       angle = 0.75;
     
     // go ahead and set angle
-    m_HoodTargetPos = -1.0; //angle; TODO: for testing only, put this back
+    m_HoodTargetPos = angle; //angle; TODO: for testing only, put this back
   }
 
   /** Returns current hood servo position  */

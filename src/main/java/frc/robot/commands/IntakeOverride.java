@@ -6,32 +6,39 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.RobotContainer;
+import frc.robot.subsystems.Intake;
 
-public class TiltShooter extends Command {
-  /** Creates a new TiltShooter. */
-
-  public TiltShooter() {
+public class IntakeOverride extends Command {
+  /** Creates a new IntakeOverride. */
+  public IntakeOverride() {
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(RobotContainer.m_shooter);
+    addRequirements(RobotContainer.intake);
+    addRequirements(RobotContainer.lifter);
   }
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {}
+  public void initialize() {
+    // turn on the intake and the lifter
+    RobotContainer.intake.setMotorSpeed(Intake.MOTORSPEED);
+    RobotContainer.lifter.liftBalls();
+  }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
-  public void execute() {
-      //RobotContainer.m_shooter.setShooterAngle(1.0);
-    }
+  public void execute() {}
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted) {}
+  public void end(boolean interrupted) {
+    RobotContainer.intake.setMotorSpeed(0);
+    RobotContainer.lifter.stopMotor();
+
+  }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return true;
+    return false;
   }
 }

@@ -48,9 +48,12 @@ public class AutoShootCommand extends Command {
     double err = Math.abs(RobotContainer.hubTargeting.GetTargetHoodSetting()-RobotContainer.m_shooter.getHoodEstimatedPos());
     waitUntil = System.currentTimeMillis() + 300;//(long) (err*(3.5/1.75)*1000*1.1); // Servo travels 1.75 units in 3.5 seconds
   
-    RobotContainer.m_shooter.setShooterAngle(RobotContainer.hubTargeting.GetTargetHoodSetting());
-    RobotContainer.m_shooter.setShooterSpeed(RobotContainer.hubTargeting.GetTargetRPM());
-    RobotContainer.m_shooter.setTopShooterSpeed(RobotContainer.hubTargeting.GetTopTargetRPM());
+    System.out.println("I FOUND THE BUG!!");
+    /* Possible bug site?
+     RobotContainer.m_shooter.setShooterAngle(RobotContainer.hubTargeting.GetTargetHoodSetting());
+     RobotContainer.m_shooter.setShooterSpeed(RobotContainer.hubTargeting.GetTargetRPM());
+     RobotContainer.m_shooter.setTopShooterSpeed(RobotContainer.hubTargeting.GetTopTargetRPM());
+     */
   }
 
   // Called every time the scheduler runs while the command is scheduled.

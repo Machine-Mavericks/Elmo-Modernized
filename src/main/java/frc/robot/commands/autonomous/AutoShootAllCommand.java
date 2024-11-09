@@ -63,10 +63,13 @@ public class AutoShootAllCommand extends Command {
         if (RobotContainer.hubTargeting.IsTarget())
         {
           double estimate = RobotContainer.hubTargeting.EstimateDistance();
-          // preset shooter speed to get it warmed up
-          RobotContainer.m_shooter.setShooterAngle(RobotContainer.hubTargeting.GetTargetHoodSetting(estimate));
-          RobotContainer.m_shooter.setShooterSpeed(RobotContainer.hubTargeting.GetTargetRPM(estimate));
-          RobotContainer.m_shooter.setTopShooterSpeed(RobotContainer.hubTargeting.GetTopTargetRPM(estimate));
+          System.out.println("I FOUND THE BUG SOMEWHERE ELSE!!");
+          /*
+           // preset shooter speed to get it warmed up
+           RobotContainer.m_shooter.setShooterAngle(RobotContainer.hubTargeting.GetTargetHoodSetting(estimate));
+           RobotContainer.m_shooter.setShooterSpeed(RobotContainer.hubTargeting.GetTargetRPM(estimate));
+           RobotContainer.m_shooter.setTopShooterSpeed(RobotContainer.hubTargeting.GetTopTargetRPM(estimate));
+           */
           
           // add in our estimate to total
           distanceestimate += estimate;
