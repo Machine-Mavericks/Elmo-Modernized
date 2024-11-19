@@ -8,10 +8,13 @@ import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.commands.AimThenShoot;
 import frc.robot.commands.ClimbCommand;
 import frc.robot.commands.ClimbGroup;
+import frc.robot.commands.DemoShooterCommand;
 import frc.robot.commands.DriveCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.IntakeOverride;
@@ -109,6 +112,13 @@ public class RobotContainer {
 
     //OI.climbButton.whileTrue(new ClimbGroup());
     //OI.manualClimbButton.whileTrue(new ClimbCommand());
+
+    // Demo single-controller bindings
+    OI.demo_ShootButton.whileTrue(new DemoShooterCommand());
+    OI.demo_IntakeButton.onTrue(Commands.runOnce(() -> intake.setMotorSpeed(Intake.MOTORSPEED), intake))
+                        .onFalse(Commands.runOnce(() -> intake.setMotorSpeed(0), intake));
+    OI.demo_UptakeButton.onTrue(Commands.runOnce(() -> lifter.liftBalls(), lifter))
+                        .onFalse(Commands.runOnce(() -> lifter.stopMotor(), lifter));
  }
 
   /**

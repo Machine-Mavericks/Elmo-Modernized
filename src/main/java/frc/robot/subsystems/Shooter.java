@@ -10,6 +10,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.networktables.GenericEntry;
@@ -138,6 +139,15 @@ public class Shooter extends SubsystemBase {
 
     // update shuffleboard
     updateShuffleboard();
+  }
+
+  /**
+   * This method will set the motors to 0% output, and coast down to a stop
+   * Should be gentler than PID trying to slow them down
+   */
+  public void coastToIdle(){
+    rightShooterFalcon.set(0);
+    topShooterFalcon.set(0);
   }
 
   /** This method will set the motors to the given motor speed

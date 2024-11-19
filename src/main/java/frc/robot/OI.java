@@ -3,6 +3,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
  * This class cointains definitions for the robot's hardware devices.
@@ -31,7 +32,7 @@ public class OI {
         // limit the acceleration
         newXInput = (newXInput - prevXInput) > maxAccel ? prevXInput + maxAccel : newXInput;
         newXInput = (newXInput - prevXInput) < -1 * maxAccel ? prevXInput - maxAccel : newXInput;
-        return ((driverController.getRightTriggerAxis() >= 0.75) ? newXInput * 0.20 : newXInput)*speedLimitFactor;
+        return ((slowDriveButton.getAsBoolean()) ? newXInput * 0.20 : newXInput)*speedLimitFactor;
     }
 
     public static double getYDriveInput(){
@@ -48,7 +49,7 @@ public class OI {
         // limit the acceleration
         newYInput = (newYInput - prevYInput) > maxAccel ? prevYInput + maxAccel : newYInput;
         newYInput = (newYInput - prevYInput) < -1 * maxAccel ? prevYInput - maxAccel : newYInput;
-        return ((driverController.getRightTriggerAxis() >= 0.75) ? newYInput * 0.20 : newYInput)*speedLimitFactor;
+        return ((slowDriveButton.getAsBoolean()) ? newYInput * 0.20 : newYInput)*speedLimitFactor;
     }
 
     public static double getRotDriveInput(){
@@ -84,6 +85,9 @@ public class OI {
 
         static final Button RELEASE_BALL_BUTTON = XboxController.Button.kBack;
         static final Button MANUAL_CLIMB_BUTTON = XboxController.Button.kStart;
+
+        // Demo single-controler bindings
+        static final Button DEMO_UPTAKE_BUTTON = XboxController.Button.kLeftBumper;
     }
 
     /** Port for controller used by driver */
@@ -126,7 +130,12 @@ public class OI {
     /** climb button. Mapped to {@link Bindings#CLIMBER_BUTTON} */
     public static final JoystickButton releaseBallButton = new JoystickButton(operatorController, Bindings.RELEASE_BALL_BUTTON.value);
 
-
-
+    // Demo bindings to allow for single controller operation
+    /** Spin shooter button, bound to right trigger */
+    public static final Trigger demo_ShootButton = new Trigger(() -> driverController.getRightTriggerAxis() >= 0.75);
+    /** Spin intake button, bound to left trigger */
+    public static final Trigger demo_IntakeButton = new Trigger(() -> driverController.getLeftTriggerAxis() >= 0.75);
+    /** Spin updake button. Mapped to {@link Bindings#DEMO_UPTAKE_BUTTON} */
+    public static final JoystickButton demo_UptakeButton = new JoystickButton(driverController, Bindings.DEMO_UPTAKE_BUTTON.value);  
 }
  
