@@ -119,7 +119,7 @@ public class Shooter extends SubsystemBase {
     initializeShuffleboard();
 
     // set up PWM to operate hood servos
-    m_servo.setBoundsMicroseconds(2, 1, 1, 1, 1); // Todo: What?
+    m_servo.setBoundsMicroseconds(2000, 1800, 1500, 1200, 1000); // Todo: What?
 
     // set default hood target position and estimate
     m_HoodTargetPos = -0.5;
