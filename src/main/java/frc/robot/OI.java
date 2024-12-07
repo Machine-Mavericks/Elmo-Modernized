@@ -57,7 +57,7 @@ public class OI {
         double speedLimitFactor = RobotContainer.drivetrain.speedLimitFactor.getDouble(1.0);
         double rotInput = driverController.getRightX()*speedLimitFactor;
         rotInput = Math.abs(rotInput) > 0.1 ? rotInput*0.5 : 0;
-        return rotInput;
+        return (slowDriveButton.getAsBoolean()) ? rotInput * 0.40 : rotInput;
     }
     /**
      * Inner class containing controller bindings
@@ -110,7 +110,7 @@ public class OI {
     public static final JoystickButton ballTrackingButton = new JoystickButton(driverController, Bindings.BALL_TRACKING_BUTTON.value);
     
     /** Drive reduced speed button. Mapped to {@link Bindings#SLOW_DRIVE_BUTTON} */
-    public static final JoystickButton slowDriveButton = new JoystickButton(driverController, Bindings.SLOW_DRIVE_BUTTON.value);
+    public static final Trigger slowDriveButton = new JoystickButton(driverController, Bindings.SLOW_DRIVE_BUTTON.value).negate();
 
     /** undershoot button. Mapped to {@link Bindings#OPERATOREVALUATION_UNDERSHOOT} */
     public static final JoystickButton undershootButton = new JoystickButton(operatorController, Bindings.OPERATOREVALUATION_UNDERSHOOT.value);
