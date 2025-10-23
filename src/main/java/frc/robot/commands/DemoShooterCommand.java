@@ -9,7 +9,7 @@ import frc.robot.RobotContainer;
 public class DemoShooterCommand extends Command {
 
     // IF YOU WANT TO CHANGE SHOOTER SPEED, CHANGE THE SELECTION HERE
-    private static final SpeedConfig SELECTED_SPEED = SpeedConfig.BASKETBALL;
+    private static final SpeedConfig SELECTED_SPEED = SpeedConfig.LOB_TOSS;
 
     public DemoShooterCommand(){
         addRequirements(RobotContainer.m_shooter);
@@ -44,5 +44,9 @@ public class DemoShooterCommand extends Command {
         // Add more speed configurations here
         static final SpeedConfig DISABLED = new SpeedConfig(0, 0, 0);
         static final SpeedConfig BASKETBALL = new SpeedConfig(-3300, 3000, 0);
+        static final SpeedConfig LOB_TOSS = new SpeedConfig(-2000, 2000, 0);
+        static final SpeedConfig GIVR = new SpeedConfig(-6000, 6000, 0);
+        static final SpeedConfig REGI = new SpeedConfig(-6500, 6500, 0);
     }
 }
+
