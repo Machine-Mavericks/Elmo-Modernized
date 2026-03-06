@@ -56,7 +56,7 @@ public class Drivetrain extends SubsystemBase {
 
         /** The steer motor gains */
         private static final Slot0Configs SteerMotorGains = new Slot0Configs()
-        .withKP(1).withKI(0).withKD(0.0)
+        .withKP(3).withKI(0).withKD(0.0)
         .withKS(0).withKV(0).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()

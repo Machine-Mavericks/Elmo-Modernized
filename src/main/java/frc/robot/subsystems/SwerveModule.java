@@ -52,6 +52,9 @@ public class SwerveModule {
         pidController.setP(constants.SteerMotorGains.kP);
         pidController.setI(constants.SteerMotorGains.kI);
         pidController.setD(constants.SteerMotorGains.kD);
+        pidController.setPositionPIDWrappingEnabled(true);
+        pidController.setPositionPIDWrappingMinInput(-0.5);
+        pidController.setPositionPIDWrappingMaxInput(0.5);
 
     }
 
