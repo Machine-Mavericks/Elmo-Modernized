@@ -16,7 +16,7 @@ public class DriveCommand extends Command {
 
   private Drivetrain m_drivetrain;
 
-  private PIDController m_headingPID = new PIDController(0.01, 0, 0);
+  private PIDController m_headingPID = new PIDController(0, 0, 0);
   // Use Double class so it can be set to null
   private Double m_PIDTarget = null;
   private long m_pidDelay = -1;
