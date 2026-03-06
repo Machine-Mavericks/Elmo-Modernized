@@ -32,7 +32,7 @@ public class OI {
         // limit the acceleration
         newXInput = (newXInput - prevXInput) > maxAccel ? prevXInput + maxAccel : newXInput;
         newXInput = (newXInput - prevXInput) < -1 * maxAccel ? prevXInput - maxAccel : newXInput;
-        return ((slowDriveButton.getAsBoolean()) ? newXInput * 0.20 : newXInput)*speedLimitFactor;
+        return -((slowDriveButton.getAsBoolean()) ? newXInput * 0.20 : newXInput)*speedLimitFactor;
     }
 
     public static double getYDriveInput(){
@@ -49,7 +49,7 @@ public class OI {
         // limit the acceleration
         newYInput = (newYInput - prevYInput) > maxAccel ? prevYInput + maxAccel : newYInput;
         newYInput = (newYInput - prevYInput) < -1 * maxAccel ? prevYInput - maxAccel : newYInput;
-        return ((slowDriveButton.getAsBoolean()) ? newYInput * 0.20 : newYInput)*speedLimitFactor;
+        return -((slowDriveButton.getAsBoolean()) ? newYInput * 0.20 : newYInput)*speedLimitFactor;
     }
 
     public static double getRotDriveInput(){
@@ -57,7 +57,7 @@ public class OI {
         double speedLimitFactor = RobotContainer.drivetrain.speedLimitFactor.getDouble(1.0);
         double rotInput = driverController.getRightX()*speedLimitFactor;
         rotInput = Math.abs(rotInput) > 0.1 ? rotInput*0.5 : 0;
-        return (slowDriveButton.getAsBoolean()) ? rotInput * 0.40 : rotInput;
+        return -(slowDriveButton.getAsBoolean()) ? rotInput * 0.40 : rotInput;
     }
     /**
      * Inner class containing controller bindings
