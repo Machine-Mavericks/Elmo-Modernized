@@ -343,7 +343,7 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putString("TargetRot", newrotation.toString());
         SmartDashboard.putString("CurrentY", ((Double)RobotContainer.gyro.getYaw()).toString());
         // determine chassis speeds
-        if (false) {
+        if (fieldOriented) {
             m_chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(newtranslation.getX(),
                     newtranslation.getY(),
                     newrotation,
