@@ -49,9 +49,9 @@ public class SwerveModule {
         steerSparkmax.getEncoder().setVelocityConversionFactor(constants.SteerMotorGearRatio);
         steerSparkmax.getEncoder().setPosition(1 - (encoder.get() / 360));
         SparkPIDController pidController = steerSparkmax.getPIDController();
-        pidController.setP(constants.DriveMotorGains.kP);
-        pidController.setI(constants.DriveMotorGains.kI);
-        pidController.setD(constants.DriveMotorGains.kD);
+        pidController.setP(constants.SteerMotorGains.kP);
+        pidController.setI(constants.SteerMotorGains.kI);
+        pidController.setD(constants.SteerMotorGains.kD);
 
     }
 
@@ -80,8 +80,8 @@ public class SwerveModule {
 
     public void apply(SwerveModuleState state, DriveRequestType type){
         if (type == DriveRequestType.OpenLoopVoltage){
-            // driveSparkmax.set(state.speedMetersPerSecond);
-            // steerSparkmax.getPIDController().setReference(state.angle.getRotations(), ControlType.kPosition);
+            driveSparkmax.set(state.speedMetersPerSecond);
+            steerSparkmax.getPIDController().setReference(state.angle.getRotations(), ControlType.kPosition);
         }
     }
 }

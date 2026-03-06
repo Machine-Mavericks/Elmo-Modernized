@@ -56,8 +56,8 @@ public class Drivetrain extends SubsystemBase {
 
         /** The steer motor gains */
         private static final Slot0Configs SteerMotorGains = new Slot0Configs()
-        .withKP(0.05).withKI(0.002).withKD(0.0)
-        .withKS(0).withKV(1).withKA(0);
+        .withKP(1).withKI(0).withKD(0.0)
+        .withKS(0).withKV(0).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
         .withKP(3).withKI(0).withKD(0)
@@ -235,7 +235,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.FL_STEER_FALCON, 
                 RobotMap.CANID.FL_DRIVE_FALCON, 
                 RobotMap.CANID.FL_STEER_ENCODER, 
-                358,
+                358 - 180,
                 FRONT_LEFT_OFFSET.getX(),
                 FRONT_LEFT_OFFSET.getY()
         );
@@ -262,7 +262,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.BL_STEER_FALCON, 
                 RobotMap.CANID.BL_DRIVE_FALCON, 
                 RobotMap.CANID.BL_STEER_ENCODER, 
-                272, 
+                272 - 180, 
                 BACK_LEFT_OFFSET.getX(),
                 BACK_LEFT_OFFSET.getY()
         );
