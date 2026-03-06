@@ -68,19 +68,19 @@ public class LEDCommand extends Command {
       RobotContainer.LEDStrip.setPattern(LED_PATTERN.HUB);
     }
     // low battery voltage warning
-    else if (RobotContainer.panel.getVoltage() <11.0)
-    {
-       RobotContainer.LEDStrip.setPattern(LED_PATTERN.LOWBATTERY);
-    }
+    // else if (RobotContainer.panel.getVoltage() <11.0)
+    // {
+    //    RobotContainer.LEDStrip.setPattern(LED_PATTERN.LOWBATTERY);
+    // }
 
     
     // should we turn off?
-    if ( !(RobotContainer.panel.getVoltage() <11.0 ) &&
-         !(RobotContainer.ballTargeting.IsBall()) &&
-         !(RobotContainer.hubTargeting.isTargetPresent()))
-    {
-      RobotContainer.LEDStrip.setPattern(LED_PATTERN.OFF);
-    }
+    // if ( !(RobotContainer.panel.getVoltage() <11.0 ) &&
+    //      !(RobotContainer.ballTargeting.IsBall()) &&
+    //      !(RobotContainer.hubTargeting.isTargetPresent()))
+    // {
+    //   RobotContainer.LEDStrip.setPattern(LED_PATTERN.OFF);
+    // }
     
     // // counter used to create blink rate of ~2.5Hz
     // counter++;

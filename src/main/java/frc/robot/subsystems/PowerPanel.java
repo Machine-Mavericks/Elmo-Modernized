@@ -31,7 +31,7 @@ public class PowerPanel extends SubsystemBase {
   public PowerPanel() {
     
     // create power distribution object
-    m_Panel = new PowerDistribution(1, ModuleType.kRev);
+    m_Panel = new PowerDistribution(1, ModuleType.kCTRE);
     
     m_TotalEnergy = 0.0;
     // set up shuffleboard page
@@ -79,10 +79,10 @@ public class PowerPanel extends SubsystemBase {
   /** Update subsystem shuffle board page with current Gyro values */
   private void updateShuffleboard() {
     // write current robot Gyro
-    m_Voltage.setDouble(m_Panel.getVoltage());
-    m_Current.setDouble(m_Panel.getTotalCurrent());
-    m_Power.setDouble(m_Panel.getTotalPower());
-    m_Energy.setDouble(m_TotalEnergy);
+    // m_Voltage.setDouble(m_Panel.getVoltage());
+    // m_Current.setDouble(m_Panel.getTotalCurrent());
+    // m_Power.setDouble(m_Panel.getTotalPower());
+    // m_Energy.setDouble(m_TotalEnergy);
   }
 
 

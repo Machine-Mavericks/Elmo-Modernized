@@ -4,7 +4,6 @@ import java.util.Map;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.ClosedLoopOutputType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
@@ -18,6 +17,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -41,11 +42,11 @@ public class Drivetrain extends SubsystemBase {
     public class SwerveModuleSettings {
         /** Gear ratio between drive motor and wheel. Drive reduction constants taken from the original SDS library. 
          * Reciprocal is taken to get expected format for number in pheonix library, for a better explaination, read the source code for SwerveModuleConstants*/
-        public static final double DriveMotorGearRatio = 1 / MK4_L1_DriveReduction; 
+        public static final double DriveMotorGearRatio = 1 / MK2_L3_DriveReduction; 
         /** Gear ratio between steer motor and CANcoder An example ratio for the SDS Mk4: 12.8 */
-        public static final double SteerMotorGearRatio = 1 / MK4_L1_SteerReduction;
+        public static final double SteerMotorGearRatio = 1 / MK2_L1_SteerReduction;
         /** Wheel radius of the driving wheel in inches */
-        public static final double WheelDiameter = Units.metersToInches(MK4_L1_WheelDiameter);
+        public static final double WheelDiameter = Units.metersToInches(MK2_L1_WheelDiameter);
         /** The maximum amount of current the drive motors can apply without slippage */
         public static final double SlipCurrent = 400;
 
@@ -55,7 +56,7 @@ public class Drivetrain extends SubsystemBase {
 
         /** The steer motor gains */
         private static final Slot0Configs SteerMotorGains = new Slot0Configs()
-        .withKP(60).withKI(0).withKD(0.05)
+        .withKP(0.05).withKI(0.002).withKD(0.0)
         .withKS(0).withKV(1).withKA(0);
         /** The drive motor gains */
         public static final Slot0Configs DriveMotorGains = new Slot0Configs()
@@ -72,14 +73,21 @@ public class Drivetrain extends SubsystemBase {
         public static final double SpeedAt12VoltsMps = MAX_VELOCITY_METERS_PER_SECOND; 
 
         /** True if the steering motor is reversed from the CANcoder */
-        public static final boolean DriveMotorInverted = MK4_L1_DriveInverted;
+        public static final boolean DriveMotorInverted = MK2_L1_DriveInverted;
 
 
         /** True if the steering motor is reversed from the CANcoder */
-        public static final boolean SteerMotorInverted = MK4_L1_SteerInverted;
+        public static final boolean SteerMotorInverted = MK2_L1_SteerInverted;
     }
 
     
+
+    StructArrayPublisher<SwerveModuleState> desiredStatePublisher = NetworkTableInstance.getDefault()
+        .getStructArrayTopic("desiredStates", SwerveModuleState.struct).publish();
+
+    StructArrayPublisher<SwerveModuleState> currentStatePublisher = NetworkTableInstance.getDefault()
+        .getStructArrayTopic("currentStates", SwerveModuleState.struct).publish();
+
 
             
     // value controlled on shuffleboard to stop the jerkiness of the robot by limiting its acceleration
@@ -123,12 +131,12 @@ public class Drivetrain extends SubsystemBase {
 
     // All gearing values used to be supplied by the SDS library, which was discontinued
     // Values taken from https://github.com/SwerveDriveSpecialties/Do-not-use-swerve-lib-2022-unmaintained/blob/develop/src/main/java/com/swervedrivespecialties/swervelib/SdsModuleConfigurations.java
-    public static final double MK4_L1_DriveReduction = (14.0 / 50.0) * (25.0 / 19.0) * (15.0 / 45.0);
-    public static final double MK4_L1_SteerReduction = (15.0 / 32.0) * (10.0 / 60.0);
-    public static final double MK4_L1_WheelDiameter = 0.10033;
+    public static final double MK2_L3_DriveReduction = 1 / 8.33;
+    public static final double MK2_L1_SteerReduction = 1 / 18;
+    public static final double MK2_L1_WheelDiameter = 0.10033;
 
-    public static final boolean MK4_L1_DriveInverted = true;
-    public static final boolean MK4_L1_SteerInverted = false;
+    public static final boolean MK2_L1_DriveInverted = true;
+    public static final boolean MK2_L1_SteerInverted = false;
      
 
     // The formula for calculating the theoretical maximum velocity is:
@@ -146,8 +154,8 @@ public class Drivetrain extends SubsystemBase {
      * line.
      */
     public static final double MAX_VELOCITY_METERS_PER_SECOND = 6380.0 / 60.0 *      
-            MK4_L1_DriveReduction *
-            MK4_L1_WheelDiameter * Math.PI;
+            MK2_L3_DriveReduction *
+            MK2_L1_WheelDiameter * Math.PI;
 
     /**
      * The maximum angular velocity of the robot in radians per second.
@@ -227,7 +235,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.FL_STEER_FALCON, 
                 RobotMap.CANID.FL_DRIVE_FALCON, 
                 RobotMap.CANID.FL_STEER_ENCODER, 
-                21.79 / 360,  // -Math.toRadians(155 + 180)
+                358,
                 FRONT_LEFT_OFFSET.getX(),
                 FRONT_LEFT_OFFSET.getY()
         );
@@ -240,7 +248,7 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.FR_STEER_FALCON, 
                 RobotMap.CANID.FR_DRIVE_FALCON, 
                 RobotMap.CANID.FR_STEER_ENCODER, 
-                -274.92 / 360, // Degrees converted to rotations
+                277, 
                 FRONT_RIGHT_OFFSET.getX(),
                 FRONT_RIGHT_OFFSET.getY()
         );
@@ -254,10 +262,11 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.BL_STEER_FALCON, 
                 RobotMap.CANID.BL_DRIVE_FALCON, 
                 RobotMap.CANID.BL_STEER_ENCODER, 
-                -17.22 / 360, 
+                272, 
                 BACK_LEFT_OFFSET.getX(),
                 BACK_LEFT_OFFSET.getY()
         );
+        backLeftConstants.DriveMotorInverted = true;
         m_backLeftModule = new SwerveModule(backLeftConstants, CAN_BUS_NAME);
         m_backLeftModule.configNeutralMode(nm);
         m_backLeftModule.getPosition(true); // Appears to refresh internal position used for optimization
@@ -268,10 +277,11 @@ public class Drivetrain extends SubsystemBase {
                 RobotMap.CANID.BR_STEER_FALCON, 
                 RobotMap.CANID.BR_DRIVE_FALCON, 
                 RobotMap.CANID.BR_STEER_ENCODER, 
-                47.9 / 360, 
+                90,
                 BACK_RIGHT_OFFSET.getX(),
                 BACK_RIGHT_OFFSET.getY()
         );
+        backRightConstants.DriveMotorInverted = true;
         m_backRightModule = new SwerveModule(backRightConstants, CAN_BUS_NAME);
         m_backRightModule.configNeutralMode(nm);
         m_backRightModule.getPosition(true); // Appears to refresh internal position used for optimization
@@ -333,7 +343,7 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putString("TargetRot", newrotation.toString());
         SmartDashboard.putString("CurrentY", ((Double)RobotContainer.gyro.getYaw()).toString());
         // determine chassis speeds
-        if (fieldOriented) {
+        if (false) {
             m_chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(newtranslation.getX(),
                     newtranslation.getY(),
                     newrotation,
@@ -352,10 +362,11 @@ public class Drivetrain extends SubsystemBase {
         m_backLeftModule.getPosition(true);
         m_backRightModule.getPosition(true);
 
-        
         m_states = m_kinematics.toSwerveModuleStates(m_chassisSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(m_states, MAX_VELOCITY_METERS_PER_SECOND);
         SmartDashboard.putString("Speeds", m_chassisSpeeds.toString());
+
+        desiredStatePublisher.set(m_states);
 
         //SmartDashboard.putStringArray("UnoptimizedInputState:", new String[]{m_states[0].toString(), m_states[1].toString(), m_states[2].toString(), m_states[3].toString()});
         
@@ -369,6 +380,8 @@ public class Drivetrain extends SubsystemBase {
         SmartDashboard.putString("FrontRightState", m_frontRightModule.getCurrentState().toString());
         SmartDashboard.putString("BackLeftState", m_backLeftModule.getCurrentState().toString());
         SmartDashboard.putString("BackRightState", m_backRightModule.getCurrentState().toString());
+
+        currentStatePublisher.set(getSwerveStates());
         // SmartDashboard.putString("Module Target", m_frontLeftModule.getTargetState().toString());
         // SmartDashboard.putString("Target # rot", "" + m_frontLeftModule.getTargetState().angle.getRotations() + " Current rot: " + m_frontLeftModule.getCurrentState().angle.getRotations());
         // SmartDashboard.putString("Module Current", m_frontLeftModule.getCurrentState().toString());
